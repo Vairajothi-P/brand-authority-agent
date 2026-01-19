@@ -114,7 +114,7 @@ SERP DATA:
     return json.loads(res["choices"][0]["message"]["content"])
 
 # ================= FINAL RESEARCH BRIEF AGENT =================
-def generate_research_brief(topic_data, serp_analysis):
+def generate_research_brief(context, serp_analysis):
     prompt = f"""
 Generate a SERP Research Brief for a Writing Agent.
 
@@ -130,11 +130,11 @@ Return ONLY JSON:
   "writing_instructions": ""
 }}
 
-Topic Data:
-{topic_data}
+Context:
+{json.dumps(context, indent=2)}
 
 SERP Analysis:
-{serp_analysis}
+{json.dumps(serp_analysis, indent=2)}
 """
 
     res = call_openai(
@@ -159,49 +159,71 @@ def generate_resource_link(query):
 
 # ================= STREAMLIT UI =================
 st.set_page_config(page_title="SERP Research Agent", layout="wide")
-st.title("🔍 SERP Research Agent – Writing Agent Input Generator")
+st.title("🔍 SERP Research Agent ")
 
-uploaded_file = st.file_uploader("Upload PDF or TXT document")
+uploaded_file = st.file_uploader("Upload PDF or TXT document (optional)")
 
-if uploaded_file:
-    text = extract_text(uploaded_file)
+st.markdown("**Or provide context manually:**")
+topic = st.text_input("Context :", placeholder="Eg: AI for school students")
+target_audience = st.text_input("Target Audience :", placeholder="Eg: Kids aged 10–14")
+content_goal = st.selectbox(
+    "Content Goal :",
+    ["Educational", "Informational", "Commercial", "Brand Authority"]
+)
+brand = st.text_input("Brand :", placeholder="Eg: AstroKids")
+region = st.text_input("Region :", placeholder="Eg: India")
+if st.button("🚀 Run SERP Research Agent"):
 
-    st.subheader("📄 Document Preview")
-    st.text_area("Preview", text[:2000], height=200)
+    # Decide input source
+    if uploaded_file:
+        text = extract_text(uploaded_file)
+        context_data = extract_topic_with_llm(text)
+        context = {
+            "topic": context_data.get("core_topic", ""),
+            "target_audience": context_data.get("target_audience", ""),
+            "content_goal": content_goal,
+            "brand": brand,
+            "region": region,
+            "search_intent": context_data.get("search_intent", "")
+        }
+    else:
+        if not topic or not target_audience:
+            st.error("❗ Please provide at least Topic and Target Audience.")
+            st.stop()
+        context = {
+            "topic": topic,
+            "target_audience": target_audience,
+            "content_goal": content_goal,
+            "brand": brand,
+            "region": region
+        }
 
-    if st.button("🚀 Run SERP Research Agent"):
-        with st.spinner("Analyzing topic, SERP & competitors..."):
-            topic_data = extract_topic_with_llm(text)
-            serp_data = fetch_serp(topic_data["core_topic"])
-            serp_analysis = analyze_serp_with_llm(serp_data)
-            research_brief = generate_research_brief(topic_data, serp_analysis)
-            output_path = save_research_brief(research_brief)
+    with st.spinner("Analyzing SERP & competitors..."):
+        serp_data = fetch_serp(context["topic"])
+        serp_analysis = analyze_serp_with_llm(serp_data)
+        research_brief = generate_research_brief(context, serp_analysis)
+        output_path = save_research_brief(research_brief)
 
-        st.subheader("📊 Research Brief (Output for Writing Agent)")
+    st.subheader("📊 Research Brief (Output for Writing Agent)")
 
-        # 🎯 Primary Keyword
-        pk = research_brief["primary_keyword"]
-        st.markdown(f"### 🎯 Primary Keyword\n**{pk}** [🔗]({generate_resource_link(pk)})")
+    pk = research_brief["primary_keyword"]
+    st.markdown(f"### 🎯 Primary Keyword\n**{pk}** [🔗]({generate_resource_link(pk)})")
 
-        # 🔑 Secondary Keywords
-        st.markdown("### 🔑 Secondary Keywords")
-        for kw in research_brief["secondary_keywords"]:
-            st.markdown(f"- {kw} [🔗]({generate_resource_link(kw)})")
+    st.markdown("### 🔑 Secondary Keywords")
+    for kw in research_brief["secondary_keywords"]:
+        st.markdown(f"- {kw} [🔗]({generate_resource_link(kw)})")
 
-        # ❓ Question Keywords
-        st.markdown("### ❓ Question Keywords")
-        for q in research_brief["question_keywords"]:
-            st.markdown(f"- {q} [🔗]({generate_resource_link(q)})")
+    st.markdown("### ❓ Question Keywords")
+    for q in research_brief["question_keywords"]:
+        st.markdown(f"- {q} [🔗]({generate_resource_link(q)})")
 
-        # 🧠 Content Strategy
-        st.markdown(f"### 🧠 Content Angle\n{research_brief['content_angle']}")
+    st.markdown(f"### 🧠 Content Angle\n{research_brief['content_angle']}")
+    st.markdown("### 🧱 Recommended Structure")
+    for sec in research_brief["recommended_structure"]:
+        st.markdown(f"- {sec}")
 
-        st.markdown("### 🧱 Recommended Structure")
-        for sec in research_brief["recommended_structure"]:
-            st.markdown(f"- {sec}")
+    st.markdown(f"### 📏 Word Count\n{research_brief['recommended_word_count']}")
+    st.markdown(f"### 🚀 Ranking Feasibility\n{research_brief['ranking_feasibility']}")
+    st.markdown(f"### ✍️ Writing Instructions\n{research_brief['writing_instructions']}")
 
-        st.markdown(f"### 📏 Word Count\n{research_brief['recommended_word_count']}")
-        st.markdown(f"### 🚀 Ranking Feasibility\n{research_brief['ranking_feasibility']}")
-        st.markdown(f"### ✍️ Writing Instructions\n{research_brief['writing_instructions']}")
-
-        st.success(f"✅ Research Brief saved at: {output_path}")
+    st.success(f"✅ Research Brief saved at: {output_path}")

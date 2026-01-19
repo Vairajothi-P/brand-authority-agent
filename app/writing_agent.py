@@ -16,7 +16,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESEARCH_JSON_PATH = os.path.join(
     BASE_DIR,
     "agent_outputs",
-    "research_brief.json"
+    "research_briefs.json"
 )
 
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")

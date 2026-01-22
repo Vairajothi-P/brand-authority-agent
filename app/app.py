@@ -23,7 +23,7 @@ openai.api_key = OPENAI_KEY
 # ================= APP =================
 app = FastAPI()
 
-# ---------- HEALTH CHECK ----------
+# ---------- HEALTH ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -37,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ================= OPENAI HELPER =================
+# ================= OPENAI =================
 def call_openai(prompt, system_role, temperature=0.3):
     res = openai.ChatCompletion.create(
         model="gpt-4.1-mini",
@@ -49,7 +49,7 @@ def call_openai(prompt, system_role, temperature=0.3):
     )
     return res.choices[0].message.content
 
-# ================= SERP FETCH =================
+# ================= SERP =================
 def fetch_serp(keyword):
     res = requests.get(
         "https://serpapi.com/search.json",
@@ -64,15 +64,15 @@ def fetch_serp(keyword):
     res.raise_for_status()
     return res.json()
 
-# ================= SERP ANALYSIS AGENT =================
+# ================= SERP ANALYSIS =================
 def analyze_serp(serp_data):
     prompt = f"""
-Analyze the SERP data and estimate ranking difficulty.
+Analyze SERP and estimate difficulty.
 
 Return ONLY JSON:
 {{
-  "keyword_difficulty": "",
-  "ranking_feasibility": ""
+  "keyword_difficulty": "Low / Medium / High",
+  "ranking_feasibility": "Low / Medium / High"
 }}
 
 SERP DATA:
@@ -80,26 +80,27 @@ SERP DATA:
 """
     return json.loads(call_openai(prompt, "SEO SERP analysis agent"))
 
-# ================= BLOG ANGLE AGENT =================
+# ================= ANGLES =================
 def generate_blog_angles(context, count):
     prompt = f"""
-Generate {count} DISTINCT blog angles.
-Each angle must target a different sub-topic or intent.
+Generate {count} blog angles.
 
 Return ONLY JSON:
 {{ "angles": [] }}
 
 Context:
-{json.dumps(context, indent=2)}
+{json.dumps(context)}
 """
-    return json.loads(
-        call_openai(prompt, "Content ideation agent", temperature=0.4)
-    )["angles"]
+    return json.loads(call_openai(prompt, "Content ideation agent", 0.4))["angles"]
 
-# ================= RESEARCH BRIEF AGENT =================
+# ================= BRIEF =================
 def generate_research_brief(context, serp_analysis, angle):
     prompt = f"""
-Generate a detailed SEO research brief.
+Generate an SEO research brief.
+
+IMPORTANT:
+- Arrays MUST contain ONLY STRINGS
+- No objects inside arrays
 
 Return ONLY JSON:
 {{
@@ -114,10 +115,10 @@ Return ONLY JSON:
 }}
 
 Context:
-{json.dumps(context, indent=2)}
+{json.dumps(context)}
 
 SERP Insights:
-{json.dumps(serp_analysis, indent=2)}
+{json.dumps(serp_analysis)}
 
 Blog Angle:
 {angle}

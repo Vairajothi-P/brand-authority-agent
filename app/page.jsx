@@ -5,25 +5,38 @@ import { useState } from "react";
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
+  const [error, setError] = useState("");
 
   async function runAgent(e) {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
-    const formData = new FormData(e.target);
+    try {
+      const formData = new FormData(e.target);
 
-    const res = await fetch("http://127.0.0.1:8000/run-agent", {
-      method: "POST",
-      body: formData,
-    });
+      const res = await fetch("http://127.0.0.1:8000/research-agent", {
+        method: "POST",
+        body: formData,
+      });
 
-    const data = await res.json();
-    setResults(data);
+      const data = await res.json();
+
+      if (data.error) {
+        setError(data.error);
+        setResults([]);
+      } else {
+        setResults(data);
+      }
+    } catch (err) {
+      setError("Backend not reachable");
+    }
+
     setLoading(false);
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-black text-white p-10">
+    <div className="min-h-screen bg-black text-white p-10">
       <h1 className="text-4xl font-bold mb-8 text-center">
         🔍 SERP Research Agent
       </h1>
@@ -33,14 +46,10 @@ export default function Home() {
         className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl"
       >
         <input name="topic" placeholder="Topic" required className="input" />
-        <input
-          name="target_audience"
-          placeholder="Target Audience"
-          required
-          className="input"
-        />
+        <input name="target_audience" placeholder="Audience" required className="input" />
 
-        <select name="content_goal" className="input">
+        <select name="content_goal" required className="input">
+          <option value="">Select Goal</option>
           <option>Educational</option>
           <option>Informational</option>
           <option>Commercial</option>
@@ -49,46 +58,21 @@ export default function Home() {
 
         <input name="brand" placeholder="Brand" className="input" />
         <input name="region" placeholder="Region" className="input" />
-        <input
-          name="blog_count"
-          type="number"
-          min="1"
-          max="5"
-          defaultValue="1"
-          className="input"
-        />
+        <input name="blog_count" type="number" defaultValue="1" className="input" />
 
-        <button
-          type="submit"
-          className="col-span-1 md:col-span-2 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-semibold"
-        >
-          🚀 Run Research Agent
+        <button className="col-span-2 bg-indigo-600 py-3 rounded-xl">
+          🚀 Run Agent
         </button>
       </form>
 
-      {loading && (
-        <p className="text-center mt-6 text-indigo-300">
-          ⏳ Analyzing SERP & competitors...
-        </p>
-      )}
+      {loading && <p className="text-center mt-4">⏳ Running...</p>}
+      {error && <p className="text-red-400 text-center mt-4">{error}</p>}
 
-      <div className="mt-10 space-y-6 max-w-5xl mx-auto">
+      <div className="mt-8 max-w-5xl mx-auto space-y-4">
         {results.map((b, i) => (
-          <div
-            key={i}
-            className="bg-white/10 p-6 rounded-xl border border-white/20"
-          >
-            <h2 className="text-2xl font-semibold mb-1">
-              Blog {b.blog_number}
-            </h2>
-            <p className="text-indigo-300 mb-3">{b.blog_angle}</p>
-
-            <p><b>Primary Keyword:</b> {b.primary_keyword}</p>
-            <p><b>Word Count:</b> {b.recommended_word_count}</p>
-
-            <p className="mt-3 text-sm opacity-90">
-              {b.writing_instructions}
-            </p>
+          <div key={i} className="bg-white/10 p-4 rounded">
+            <h3 className="text-xl font-bold">Blog {b.blog_number}</h3>
+            <p>{b.blog_angle}</p>
           </div>
         ))}
       </div>

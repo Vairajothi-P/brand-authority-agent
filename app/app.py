@@ -8,16 +8,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import openai
 
-# ================= ENV =================
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
 
-RATE_LIMIT_WAIT = 20
+if not OPENAI_KEY:
+    raise RuntimeError("OPENAI_API_KEY is missing")
+
+openai.api_key = OPENAI_KEY
 
 app = FastAPI()
 
-# ================= CORS (IMPORTANT) =================
+# ---------- CORS ----------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,37 +29,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ================= OPENAI CONNECTOR =================
-def call_openai(prompt, system_role, model="gpt-4.1-mini", temperature=0.3):
-    for _ in range(5):
-        try:
-            return openai.ChatCompletion.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_role},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=temperature
-            )
-        except Exception as e:
-            print("Retrying OpenAI:", e)
-            time.sleep(RATE_LIMIT_WAIT)
-    raise Exception("OpenAI failed after retries")
+# ---------- HEALTH CHECK ----------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
-# ================= SERP FETCH =================
+# ---------- OPENAI ----------
+def call_openai(prompt, system_role):
+    return openai.ChatCompletion.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": system_role},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+
+# ---------- SERP ----------
 def fetch_serp(keyword):
-    url = "https://serpapi.com/search.json"
-    params = {
-        "engine": "google",
-        "q": keyword,
-        "num": 10,
-        "api_key": SERP_API_KEY
-    }
-    return requests.get(url, params=params).json()
+    res = requests.get(
+        "https://serpapi.com/search.json",
+        params={
+            "engine": "google",
+            "q": keyword,
+            "num": 10,
+            "api_key": SERP_API_KEY
+        },
+        timeout=20
+    )
+    res.raise_for_status()
+    return res.json()
 
-# ================= MAIN API =================
-@app.post("/run-agent")
-async def run_agent(
+# ---------- API ----------
+@app.post("/research-agent")
+async def research_agent(
     topic: str = Form(...),
     target_audience: str = Form(...),
     content_goal: str = Form(...),
@@ -64,80 +70,49 @@ async def run_agent(
     region: str = Form(""),
     blog_count: int = Form(1),
 ):
+    try:
+        context = {
+            "topic": topic,
+            "target_audience": target_audience,
+            "content_goal": content_goal,
+            "brand": brand,
+            "region": region
+        }
 
-    context = {
-        "topic": topic,
-        "target_audience": target_audience,
-        "content_goal": content_goal,
-        "brand": brand,
-        "region": region
-    }
+        serp_data = fetch_serp(topic)
 
-    # ---- SERP ANALYSIS ----
-    serp_data = fetch_serp(topic)
-
-    serp_prompt = f"""
+        serp_prompt = f"""
 Return ONLY JSON:
-{{
-  "serp_type": "",
-  "serp_features": [],
-  "top_domains": [],
-  "keyword_difficulty": "",
-  "ranking_probability": ""
-}}
-
+{{"keyword_difficulty":"","ranking_probability":""}}
 SERP DATA:
-{json.dumps(serp_data)[:5000]}
+{json.dumps(serp_data)[:3000]}
 """
-    serp_analysis = json.loads(
-        call_openai(serp_prompt, "SEO SERP research agent").choices[0].message.content
-    )
-
-    # ---- BLOG ANGLES ----
-    angles_prompt = f"""
-Generate {blog_count} DISTINCT blog angles.
-Return ONLY JSON:
-{{ "angles": [] }}
-
-Context:
-{json.dumps(context)}
-"""
-    angles = json.loads(
-        call_openai(angles_prompt, "Content ideation agent").choices[0].message.content
-    )["angles"]
-
-    # ---- RESEARCH BRIEFS ----
-    briefs = []
-
-    for idx, angle in enumerate(angles, start=1):
-        brief_prompt = f"""
-Return ONLY JSON:
-{{
-  "primary_keyword": "",
-  "secondary_keywords": [],
-  "question_keywords": [],
-  "content_angle": "",
-  "recommended_structure": [],
-  "recommended_word_count": "",
-  "ranking_feasibility": "",
-  "writing_instructions": ""
-}}
-
-Context:
-{json.dumps(context)}
-
-SERP Analysis:
-{json.dumps(serp_analysis)}
-
-Blog Angle:
-{angle}
-"""
-        brief = json.loads(
-            call_openai(brief_prompt, "Content strategy agent").choices[0].message.content
+        serp_analysis = json.loads(
+            call_openai(serp_prompt, "SEO agent")
+            .choices[0].message.content
         )
 
-        brief["blog_number"] = idx
-        brief["blog_angle"] = angle
-        briefs.append(brief)
+        angles_prompt = f"""
+Generate {blog_count} blog angles.
+Return ONLY JSON: {{ "angles": [] }}
+Context:{json.dumps(context)}
+"""
+        angles = json.loads(
+            call_openai(angles_prompt, "Angle agent")
+            .choices[0].message.content
+        )["angles"]
 
-    return briefs
+        briefs = []
+        for i, angle in enumerate(angles, 1):
+            briefs.append({
+                "blog_number": i,
+                "blog_angle": angle,
+                "primary_keyword": topic,
+                "recommended_word_count": "1200–1500",
+                "writing_instructions": "Write SEO-optimized content."
+            })
+
+        return briefs
+
+    except Exception as e:
+        return {"error": str(e)}

@@ -6,7 +6,7 @@ from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import openai
-#commit
+
 # ================= ENV =================
 load_dotenv()
 
@@ -20,13 +20,12 @@ if not SERP_API_KEY:
 
 openai.api_key = OPENAI_KEY
 
+# ================= CONSTANTS =================
+OUTPUT_PATH = r"C:\Users\hi\brand-authority-agent\app\agent_outputs\research_briefs.json"
+LAST_OUTPUT = []
+
 # ================= APP =================
 app = FastAPI()
-
-# ---------- HEALTH ----------
-@app.get("/health")
-def health():
-    return {"status": "ok"}
 
 # ---------- CORS ----------
 app.add_middleware(
@@ -36,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------- HEALTH ----------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # ================= OPENAI =================
 def call_openai(prompt, system_role, temperature=0.3):
@@ -64,16 +68,11 @@ def fetch_serp(keyword):
     res.raise_for_status()
     return res.json()
 
-# ================= SERP ANALYSIS =================
+# ================= ANALYSIS =================
 def analyze_serp(serp_data):
     prompt = f"""
-Analyze SERP and estimate difficulty.
-
 Return ONLY JSON:
-{{
-  "keyword_difficulty": "Low / Medium / High",
-  "ranking_feasibility": "Low / Medium / High"
-}}
+{{ "keyword_difficulty": "", "ranking_feasibility": "" }}
 
 SERP DATA:
 {json.dumps(serp_data)[:4000]}
@@ -96,12 +95,6 @@ Context:
 # ================= BRIEF =================
 def generate_research_brief(context, serp_analysis, angle):
     prompt = f"""
-Generate an SEO research brief.
-
-IMPORTANT:
-- Arrays MUST contain ONLY STRINGS
-- No objects inside arrays
-
 Return ONLY JSON:
 {{
   "primary_keyword": "",
@@ -117,13 +110,19 @@ Return ONLY JSON:
 Context:
 {json.dumps(context)}
 
-SERP Insights:
+SERP:
 {json.dumps(serp_analysis)}
 
-Blog Angle:
+Angle:
 {angle}
 """
     return json.loads(call_openai(prompt, "SEO research brief agent"))
+
+# ================= SAVE =================
+def save_output(data):
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
 # ================= API =================
 @app.post("/research-agent")
@@ -134,6 +133,8 @@ async def research_agent(
     region: str = Form(...),
     blog_count: int = Form(...),
 ):
+    global LAST_OUTPUT
+
     context = {
         "topic": topic,
         "target_audience": target_audience,
@@ -146,10 +147,38 @@ async def research_agent(
     angles = generate_blog_angles(context, blog_count)
 
     briefs = []
-    for idx, angle in enumerate(angles, start=1):
+    for i, angle in enumerate(angles, 1):
         brief = generate_research_brief(context, serp_analysis, angle)
-        brief["blog_number"] = idx
+        brief["blog_number"] = i
         brief["blog_angle"] = angle
         briefs.append(brief)
 
+    LAST_OUTPUT = briefs
     return briefs
+
+@app.post("/save-output")
+async def save_current_output():
+    if not LAST_OUTPUT:
+        return {"error": "No output to save"}
+
+    save_output(LAST_OUTPUT)
+    return {"status": "saved"}
+
+@app.post("/refine-output")
+async def refine_output(
+    suggestion: str = Form(...)
+):
+    global LAST_OUTPUT
+
+    prompt = f"""
+Improve the research briefs based on this suggestion:
+{suggestion}
+
+Return ONLY JSON array.
+
+Current output:
+{json.dumps(LAST_OUTPUT, indent=2)}
+"""
+    refined = json.loads(call_openai(prompt, "Research refinement agent", 0.3))
+    LAST_OUTPUT = refined
+    return {"status": "refined", "data": refined}

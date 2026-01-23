@@ -132,7 +132,7 @@ class WritingAgent:
         print("✍️ Writing article using research + summary...")
 
         prompt = f"""
-Write an INFORMATIONAL blog article in Markdown.
+Write an INFORMATIONAL blog article in Markdown about PRACTICAL PARENTING TIPS using astrology.
 
 Tone:
 {article.tone_guidelines}
@@ -152,11 +152,21 @@ Sections:
 
 Target length: {article.word_count} words
 
+CRITICAL INSTRUCTIONS:
+⚠️ DO NOT include definitions or technical details about astrology
+⚠️ DO NOT explain what astrology is or how it works
+⚠️ FOCUS ONLY on practical parenting tips and guidance for parents
+⚠️ Use astrology as a framework but emphasize real parenting advice
+⚠️ Examples: "Parents with [zodiac trait] kids should..." or "To handle [zodiac behavior]..."
+⚠️ Make it actionable and useful for parents, not theoretical
+
 Rules:
-- Human natural writing
-- No AI fillers
+- Practical and actionable advice
+- Natural, conversational writing
+- No astrology definitions or theory
+- Real parenting examples
 - Context > keyword stuffing
-- Examples where relevant
+- Parents-first perspective
 
 Return ONLY article content.
 """
@@ -164,7 +174,7 @@ Return ONLY article content.
         res = call_openai_with_retry(lambda: openai.ChatCompletion.create(
             model="gpt-4.1-mini",
             messages=[
-                {"role": "system", "content": "Expert contextual SEO writer"},
+                {"role": "system", "content": "Expert parenting writer focused on practical tips. Never include astrology definitions or technical details. Focus on real parenting advice."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.65

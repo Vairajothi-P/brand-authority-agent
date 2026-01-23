@@ -6,19 +6,22 @@ from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import openai
+from pathlib import Path
 
 # ================= ENV =================
 load_dotenv()
 
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-SERP_API_KEY = os.getenv("SERP_API_KEY")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
+SERP_API_KEY = os.getenv("SERP_API_KEY", "")
 
+# Only warn if keys are missing, don't crash
 if not OPENAI_KEY:
-    raise RuntimeError("OPENAI_API_KEY is missing")
+    print("⚠️  WARNING: OPENAI_API_KEY not set in .env")
 if not SERP_API_KEY:
-    raise RuntimeError("SERP_API_KEY is missing")
+    print("⚠️  WARNING: SERP_API_KEY not set in .env")
 
-openai.api_key = OPENAI_KEY
+if OPENAI_KEY:
+    openai.api_key = OPENAI_KEY
 
 # ================= CONSTANTS =================
 OUTPUT_PATH = r"C:\Users\hi\brand-authority-agent\app\agent_outputs\research_briefs.json"
@@ -37,6 +40,10 @@ app.add_middleware(
 )
 
 # ---------- HEALTH ----------
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Brand Authority Agent Backend Running"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -182,3 +189,72 @@ Current output:
     refined = json.loads(call_openai(prompt=prompt, system_role="Research refinement agent", temperature=0.3))
     LAST_OUTPUT = refined
     return {"status": "refined", "data": refined}
+# ================= WRITING AGENT =================
+try:
+    from writing_agent import ArticleState, OutlineAgent, WritingAgent, OutputAgent, Supervisor, load_json as load_json_writer
+    
+    @app.post("/writing-agent")
+    async def writing_agent_endpoint():
+        """Run the writing agent to generate article based on research briefs and summary"""
+        try:
+            # Load research and summary
+            research_path = Path(__file__).parent / "agent_outputs" / "research_briefs.json"
+            summary_path = Path(__file__).parent / "agent_outputs" / "summary.json"
+            
+            if not research_path.exists() or not summary_path.exists():
+                return {"error": "Research briefs or summary not found. Run research agent first."}
+            
+            research = load_json_writer(str(research_path), "research_briefs.json")
+            summary = load_json_writer(str(summary_path), "summary.json")
+            
+            # Create article state and run agents
+            article = ArticleState(research, summary)
+            
+            agents = {
+                "OUTLINE": OutlineAgent(),
+                "WRITE": WritingAgent(),
+                "SAVE": OutputAgent()
+            }
+            
+            supervisor = Supervisor()
+            
+            while True:
+                step = supervisor.decide(article)
+                if step == "DONE":
+                    break
+                agents[step].act(article)
+            
+            # Read the generated article
+            output_path = Path(__file__).parent / "outputs" / "article.md"
+            if output_path.exists():
+                article_content = output_path.read_text(encoding="utf-8")
+                return {
+                    "status": "success",
+                    "article": article_content,
+                    "topic": article.topic,
+                    "primary_keyword": article.primary_keyword,
+                    "secondary_keywords": article.secondary_keywords
+                }
+            else:
+                return {"error": "Article generation failed"}
+        
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/article-output")
+    async def get_article_output():
+        """Get the last generated article"""
+        try:
+            output_path = Path(__file__).parent / "outputs" / "article.md"
+            if output_path.exists():
+                return {
+                    "status": "found",
+                    "article": output_path.read_text(encoding="utf-8")
+                }
+            else:
+                return {"status": "not_found", "article": ""}
+        except Exception as e:
+            return {"error": str(e)}
+
+except ImportError as e:
+    print(f"⚠️  Writing agent import failed: {e}")

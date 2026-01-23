@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function Home() {
         setError("");
         setMessage("");
 
-        const res = await fetch("http://127.0.0.1:8000/research-agent", {
+        const res = await fetch("http://localhost:8001/research-agent", {
             method: "POST",
             body: new FormData(e.target),
         });
@@ -34,7 +35,7 @@ export default function Home() {
     }
 
     async function saveOutput() {
-        const res = await fetch("http://127.0.0.1:8000/save-output", { method: "POST" });
+        const res = await fetch("http://localhost:8001/save-output", { method: "POST" });
         const data = await res.json();
         if (data.status === "saved") setMessage("✅ Output saved successfully");
     }
@@ -43,7 +44,7 @@ export default function Home() {
         const fd = new FormData();
         fd.append("suggestion", suggestion);
 
-        const res = await fetch("http://127.0.0.1:8000/refine-output", {
+        const res = await fetch("http://localhost:8001/refine-output", {
             method: "POST",
             body: fd,
         });
@@ -57,19 +58,24 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 text-white p-10">
-            <h1 className="text-4xl font-bold text-center mb-8">🔍 SERP Research Agent</h1>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold text-center flex-1">🔍 SERP Research Agent</h1>
+                <Link href="/writing" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
+                    📝 Writing Agent
+                </Link>
+            </div>
 
             <form onSubmit={runAgent} className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl">
-                <input name="topic" placeholder="Topic" required className="input" />
-                <input name="target_audience" placeholder="Target Audience" required className="input" />
+                <input name="topic" placeholder="Topic" defaultValue="astrology remedies for kids behavior - guidance for parents" required className="input" />
+                <input name="target_audience" placeholder="Target Audience" defaultValue="Parents seeking to understand children's behavior through astrology" required className="input" />
                 <select name="content_goal" required className="input">
                     <option value="">Select Goal</option>
                     <option>Educational</option>
-                    <option>Informational</option>
+                    <option selected>Informational</option>
                     <option>Commercial</option>
                     <option>Brand Authority</option>
                 </select>
-                <input name="region" placeholder="Region" required className="input" />
+                <input name="region" placeholder="Region" defaultValue="India" required className="input" />
                 <input name="blog_count" type="number" min="1" max="5" defaultValue="1" className="input" />
                 <button className="col-span-2 bg-indigo-600 py-3 rounded-xl">🚀 Run Agent</button>
             </form>

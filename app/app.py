@@ -77,7 +77,7 @@ Return ONLY JSON:
 SERP DATA:
 {json.dumps(serp_data)[:4000]}
 """
-    return json.loads(call_openai(prompt, "SEO SERP analysis agent"))
+    return json.loads(call_openai(prompt=prompt, system_role="SEO SERP analysis agent"))
 
 # ================= ANGLES =================
 def generate_blog_angles(context, count):
@@ -90,7 +90,7 @@ Return ONLY JSON:
 Context:
 {json.dumps(context)}
 """
-    return json.loads(call_openai(prompt, "Content ideation agent", 0.4))["angles"]
+    return json.loads(call_openai(prompt=prompt, system_role="Content ideation agent", temperature=0.4))["angles"]
 
 # ================= BRIEF =================
 def generate_research_brief(context, serp_analysis, angle):
@@ -116,7 +116,7 @@ SERP:
 Angle:
 {angle}
 """
-    return json.loads(call_openai(prompt, "SEO research brief agent"))
+    return json.loads(call_openai(prompt=prompt, system_role="SEO research brief agent"))
 
 # ================= SAVE =================
 def save_output(data):
@@ -179,6 +179,6 @@ Return ONLY JSON array.
 Current output:
 {json.dumps(LAST_OUTPUT, indent=2)}
 """
-    refined = json.loads(call_openai(prompt, "Research refinement agent", 0.3))
+    refined = json.loads(call_openai(prompt=prompt, system_role="Research refinement agent", temperature=0.3))
     LAST_OUTPUT = refined
     return {"status": "refined", "data": refined}

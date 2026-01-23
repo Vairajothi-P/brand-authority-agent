@@ -1,0 +1,16 @@
+{
+  "toneParagraph": {
+    "description": "The brand voice is calm, nurturing, and emotionally reassuring, speaking to parents with empathy and gentle authority. Content validates parental concerns, avoids judgment or fear-based language, and reframes children’s challenges as natural traits or strengths. Ancient wisdom such as Vedic astrology and yoga is blended softly with practical parenting guidance. The overall intent is to support parents in raising emotionally balanced, confident children through patience, understanding, and love.",
+    "audience": "parents",
+    "do": [
+      "use warm, simple, parent-friendly language",
+      "normalize emotional challenges",
+      "guide gently rather than instruct forcefully"
+    ],
+    "avoid": [
+      "judgmental tone",
+      "technical or clinical language",
+      "urgent or sales-driven messaging"
+    ]
+  }
+}

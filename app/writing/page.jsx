@@ -17,7 +17,7 @@ export default function WritingPage() {
 
     async function loadArticle() {
         try {
-            const res = await fetch("http://localhost:8001/article-output");
+            const res = await fetch("/api/article-output");
             const data = await res.json();
             if (data.status === "found" && data.article) {
                 setArticle(data.article);
@@ -33,7 +33,7 @@ export default function WritingPage() {
         setMessage("");
 
         try {
-            const res = await fetch("http://localhost:8001/writing-agent", {
+            const res = await fetch("/api/writing-agent", {
                 method: "POST",
             });
 

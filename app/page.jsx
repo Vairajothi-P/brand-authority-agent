@@ -24,7 +24,7 @@ export default function Home() {
         setError("");
         setMessage("");
 
-        const res = await fetch("http://localhost:8001/research-agent", {
+        const res = await fetch("/api/research-agent", {
             method: "POST",
             body: new FormData(e.target),
         });
@@ -35,7 +35,7 @@ export default function Home() {
     }
 
     async function saveOutput() {
-        const res = await fetch("http://localhost:8001/save-output", { method: "POST" });
+        const res = await fetch("/api/save-output", { method: "POST" });
         const data = await res.json();
         if (data.status === "saved") setMessage("✅ Output saved successfully");
     }
@@ -44,7 +44,7 @@ export default function Home() {
         const fd = new FormData();
         fd.append("suggestion", suggestion);
 
-        const res = await fetch("http://localhost:8001/refine-output", {
+        const res = await fetch("/api/refine-output", {
             method: "POST",
             body: fd,
         });
@@ -68,12 +68,12 @@ export default function Home() {
             <form onSubmit={runAgent} className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl">
                 <input name="topic" placeholder="Topic" defaultValue="astrology remedies for kids behavior - guidance for parents" required className="input" />
                 <input name="target_audience" placeholder="Target Audience" defaultValue="Parents seeking to understand children's behavior through astrology" required className="input" />
-                <select name="content_goal" required className="input">
+                <select name="content_goal" defaultValue="Informational" required className="input">
                     <option value="">Select Goal</option>
-                    <option>Educational</option>
-                    <option selected>Informational</option>
-                    <option>Commercial</option>
-                    <option>Brand Authority</option>
+                    <option value="Educational">Educational</option>
+                    <option value="Informational">Informational</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Brand Authority">Brand Authority</option>
                 </select>
                 <input name="region" placeholder="Region" defaultValue="India" required className="input" />
                 <input name="blog_count" type="number" min="1" max="5" defaultValue="1" className="input" />

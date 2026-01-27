@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
 export default function WritingPage() {
@@ -65,7 +66,7 @@ export default function WritingPage() {
             }
 
             const data = await res.json();
-            
+
             if (data.error) {
                 setError(data.error);
             } else if (data.status === "success") {
@@ -87,9 +88,9 @@ export default function WritingPage() {
 
     async function downloadArticle() {
         if (!article) return;
-        
+
         const element = document.createElement("a");
-        const file = new Blob([article], {type: "text/markdown"});
+        const file = new Blob([article], { type: "text/markdown" });
         element.href = URL.createObjectURL(file);
         element.download = `article_${Date.now()}.md`;
         document.body.appendChild(element);
@@ -99,18 +100,23 @@ export default function WritingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-10">
-            <h1 className="text-4xl font-bold text-center mb-8">📝 Writing Agent</h1>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold">📝 Writing Agent</h1>
+                <Link href="/research" className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold">
+                    ← Back to Research
+                </Link>
+            </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto mb-8">
-                <button 
+            <div className="grid grid-cols-4 gap-4 max-w-6xl mx-auto mb-8">
+                <button
                     onClick={runWritingAgent}
                     disabled={loading}
                     className="col-span-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
                 >
                     {loading ? "⏳ Generating..." : "🚀 Generate Article"}
                 </button>
-                
-                <button 
+
+                <button
                     onClick={downloadArticle}
                     disabled={!article}
                     className="col-span-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
@@ -118,12 +124,16 @@ export default function WritingPage() {
                     ⬇️ Download MD
                 </button>
 
-                <button 
+                <button
                     onClick={loadArticle}
                     className="col-span-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-semibold"
                 >
                     🔄 Reload
                 </button>
+
+                <Link href="/branding" className="col-span-1 bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl font-semibold text-center">
+                    🎨 Go to Branding Agent
+                </Link>
             </div>
 
             {loading && <p className="text-center mt-4 text-lg">⏳ Generating article...</p>}
@@ -141,15 +151,15 @@ export default function WritingPage() {
 
             {article && (
                 <div className="max-w-4xl mx-auto bg-white/5 p-8 rounded-xl prose prose-invert max-w-none">
-                    <ReactMarkdown 
+                    <ReactMarkdown
                         components={{
-                            h1: ({node, ...props}) => <h1 className="text-3xl font-bold my-4 text-white" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="text-2xl font-bold my-3 text-indigo-300" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="text-xl font-semibold my-2 text-indigo-200" {...props} />,
-                            p: ({node, ...props}) => <p className="my-2 text-gray-200 leading-relaxed" {...props} />,
-                            li: ({node, ...props}) => <li className="my-1 text-gray-200 ml-4" {...props} />,
-                            code: ({node, ...props}) => <code className="bg-black/50 px-2 py-1 rounded text-yellow-300" {...props} />,
-                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-500 pl-4 my-2 italic text-gray-300" {...props} />,
+                            h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-4 text-white" {...props} />,
+                            h2: ({ node, ...props }) => <h2 className="text-2xl font-bold my-3 text-indigo-300" {...props} />,
+                            h3: ({ node, ...props }) => <h3 className="text-xl font-semibold my-2 text-indigo-200" {...props} />,
+                            p: ({ node, ...props }) => <p className="my-2 text-gray-200 leading-relaxed" {...props} />,
+                            li: ({ node, ...props }) => <li className="my-1 text-gray-200 ml-4" {...props} />,
+                            code: ({ node, ...props }) => <code className="bg-black/50 px-2 py-1 rounded text-yellow-300" {...props} />,
+                            blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-purple-500 pl-4 my-2 italic text-gray-300" {...props} />,
                         }}
                     >
                         {article}

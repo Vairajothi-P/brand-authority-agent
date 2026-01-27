@@ -73,7 +73,7 @@ export default function ResearchPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-10">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-700  to-blue-700 text-white p-10">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-4xl font-bold text-center flex-1">🔍 SERP Research Agent</h1>
                 <Link href="/writing" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
@@ -113,7 +113,7 @@ export default function ResearchPage() {
                     <select
                         value={contentGoal}
                         onChange={(e) => setContentGoal(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2 bg-black/20 border border-indigo-400 rounded-lg text-white"
                         suppressHydrationWarning
                     >
                         <option value="Educational">Educational</option>

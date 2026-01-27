@@ -99,15 +99,18 @@ export default function WritingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-10">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-700  to-blue-700  text-white p-10">
             <div className="flex justify-between items-center mb-8">
+                <Link href="/research" className=" bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xlfont-semibold">
+                    ← 
+                </Link>
                 <h1 className="text-4xl font-bold">📝 Writing Agent</h1>
-                <Link href="/research" className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold">
-                    ← Back to Research
+                <Link href="/branding" className="col-span-1 bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl font-semibold text-center">
+                    🎨 Go to Branding Agent
                 </Link>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 max-w-6xl mx-auto mb-8">
+            <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto mb-8">
                 <button
                     onClick={runWritingAgent}
                     disabled={loading}
@@ -131,9 +134,6 @@ export default function WritingPage() {
                     🔄 Reload
                 </button>
 
-                <Link href="/branding" className="col-span-1 bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl font-semibold text-center">
-                    🎨 Go to Branding Agent
-                </Link>
             </div>
 
             {loading && <p className="text-center mt-4 text-lg">⏳ Generating article...</p>}

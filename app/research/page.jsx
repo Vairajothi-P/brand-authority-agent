@@ -75,9 +75,9 @@ export default function ResearchPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-10">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold">🔍 SERP Research Agent</h1>
-                <Link href="/" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
-                    ← Back to Home
+                <h1 className="text-4xl font-bold text-center flex-1">🔍 SERP Research Agent</h1>
+                <Link href="/writing" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
+                    📝 Writing Agent
                 </Link>
             </div>
 

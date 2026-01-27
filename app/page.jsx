@@ -68,12 +68,7 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 text-white p-10">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold text-center flex-1">🔍 SERP Research Agent</h1>
-                <Link href="/writing" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
-                    📝 Writing Agent
-                </Link>
-            </div>
+            
 
             <form onSubmit={runAgent} className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl">
                 <input name="topic" placeholder="Topic" defaultValue="astrology remedies for kids behavior - guidance for parents" required className="input" />

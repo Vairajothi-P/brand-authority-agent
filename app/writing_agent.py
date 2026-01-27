@@ -112,7 +112,7 @@ Return ONLY JSON:
 """
 
         res = call_openai_with_retry(lambda: openai.ChatCompletion.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Return clean JSON only"},
                 {"role": "user", "content": prompt}
@@ -172,7 +172,7 @@ Return ONLY article content.
 """
 
         res = call_openai_with_retry(lambda: openai.ChatCompletion.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Expert parenting writer focused on practical tips. Never include astrology definitions or technical details. Focus on real parenting advice."},
                 {"role": "user", "content": prompt}

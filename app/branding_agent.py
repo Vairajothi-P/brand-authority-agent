@@ -83,7 +83,7 @@ Return ONLY valid JSON:
 """
 
     response = safe_openai_call(lambda: openai.ChatCompletion.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a brand auditor"},
             {"role": "user", "content": prompt}
@@ -122,7 +122,7 @@ Return ONLY rewritten markdown.
 """
 
     response = safe_openai_call(lambda: openai.ChatCompletion.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a brand editor"},
             {"role": "user", "content": prompt}

@@ -3,12 +3,12 @@
 import sys
 import os
 
-# Add the app directory to sys.path
-app_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, app_dir)
+# Add the parent directory to sys.path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
 
 if __name__ == "__main__":
     import uvicorn
-    from app import app
+    import app as app_module
     
-    uvicorn.run(app, host="127.0.0.1", port=8001, log_level="info")
+    uvicorn.run(app_module.app, host="127.0.0.1", port=8001, log_level="info")

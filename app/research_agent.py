@@ -2,10 +2,11 @@ import os
 import json
 import time
 import requests
-import streamlit as st
 import openai
 from pypdf import PdfReader
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from io import BytesIO
 
 # ================= ENV =================
 load_dotenv()
@@ -15,37 +16,66 @@ SERP_API_KEY = os.getenv("SERP_API_KEY")
 OUTPUT_DIR = "agent_outputs"
 RATE_LIMIT_WAIT = 20
 
-# ================= OPENAI CONNECTOR =================
-def call_openai(prompt, system_role, model="gpt-4.1-mini", temperature=0.3):
-    def _call():
-        return openai.ChatCompletion.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_role},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=temperature
-        )
+# ================= MODELS =================
+class ResearchRequest(BaseModel):
+    topic: str
+    target_audience: str
+    content_goal: str
+    brand: str
+    region: str
+    blog_count: int
 
+# ================= OPENAI CONNECTOR =================
+def call_openai(prompt, system_role, model="gpt-4o-mini", temperature=0.3):
     for _ in range(5):
         try:
-            return _call()
+            return openai.ChatCompletion.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_role},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=temperature
+            )
         except Exception as e:
             print(f"⏳ OpenAI error: {e}. Retrying...")
             time.sleep(RATE_LIMIT_WAIT)
 
     raise Exception("❌ OpenAI failed after retries")
 
+# ================= JSON EXTRACTION HELPER =================
+def extract_json_from_response(content):
+    """Extract JSON from response that might be wrapped in markdown code blocks"""
+    content = content.strip()
+    # Remove markdown code blocks if present
+    if content.startswith("```"):
+        # Find the start of actual JSON
+        lines = content.split("\n")
+        start_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith("{") or line.strip().startswith("["):
+                start_idx = i
+                break
+        
+        # Find the end of JSON
+        end_idx = len(lines)
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip().endswith("}") or lines[i].strip().endswith("]"):
+                end_idx = i + 1
+                break
+        
+        content = "\n".join(lines[start_idx:end_idx])
+    
+    return content
+
 # ================= DOCUMENT INGESTION =================
-def extract_text(file):
-    if file.type == "application/pdf":
-        reader = PdfReader(file)
-        return "\n".join(
-            page.extract_text()
-            for page in reader.pages
-            if page.extract_text()
-        )
-    return file.read().decode("utf-8", errors="ignore")
+def extract_text_from_pdf(file_content):
+    reader = PdfReader(BytesIO(file_content))
+    return "\n".join(
+        page.extract_text()
+        for page in reader.pages
+        if page.extract_text()
+    )
 
 # ================= TOPIC UNDERSTANDING AGENT =================
 def extract_topic_with_llm(text):
@@ -72,7 +102,17 @@ Document:
         temperature=0.2
     )
 
-    return json.loads(res["choices"][0]["message"]["content"])
+    try:
+        content = res["choices"][0]["message"]["content"].strip()
+        content = extract_json_from_response(content)
+        return json.loads(content)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        print(f"⚠️ Topic extraction parsing error: {e}")
+        return {
+            "core_topic": "Unknown topic",
+            "target_audience": "General audience",
+            "search_intent": "informational"
+        }
 
 # ================= SERP FETCH =================
 def fetch_serp(keyword):
@@ -111,7 +151,33 @@ SERP DATA:
         temperature=0.3
     )
 
-    return json.loads(res["choices"][0]["message"]["content"])
+    # Extract content safely
+    try:
+        if not res or "choices" not in res:
+            print(f"⚠️ Unexpected response structure: {res}")
+            raise ValueError("Invalid response from OpenAI")
+        
+        content = res["choices"][0]["message"]["content"].strip()
+        if not content:
+            print("⚠️ Empty content received from OpenAI")
+            raise ValueError("Empty response content")
+        
+        # Extract JSON from potential markdown wrapping
+        content = extract_json_from_response(content)
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        print(f"⚠️ JSON parsing error: {e}")
+        print(f"Content was: {content[:500]}")
+        # Return a default structure if parsing fails
+        return {
+            "serp_type": "unknown",
+            "serp_features": [],
+            "top_domains": [],
+            "competitor_strengths": [],
+            "competitor_weaknesses": [],
+            "keyword_difficulty": "medium",
+            "ranking_probability": "moderate"
+        }
 
 # ================= BLOG ANGLE GENERATOR =================
 def generate_blog_angles(context, count):
@@ -134,7 +200,14 @@ Context:
         system_role="Content ideation agent. JSON only.",
         temperature=0.4
     )
-    return json.loads(res["choices"][0]["message"]["content"])["angles"]
+    try:
+        content = res["choices"][0]["message"]["content"].strip()
+        content = extract_json_from_response(content)
+        data = json.loads(content)
+        return data.get("angles", [])
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        print(f"⚠️ Blog angles parsing error: {e}")
+        return [f"Angle {i+1}: Analysis of {context.get('topic', 'topic')}" for i in range(int(count))]
 
 # ================= FINAL RESEARCH BRIEF AGENT =================
 def generate_research_brief(context, serp_analysis, blog_angle=None):
@@ -167,7 +240,23 @@ Blog Angle:
         system_role="Content strategy agent. JSON only.",
         temperature=0.25
     )
-    return json.loads(res["choices"][0]["message"]["content"])
+    try:
+        content = res["choices"][0]["message"]["content"].strip()
+        content = extract_json_from_response(content)
+        return json.loads(content)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        print(f"⚠️ Research brief parsing error: {e}")
+        # Return a default research brief structure
+        return {
+            "primary_keyword": context.get("topic", "keyword"),
+            "secondary_keywords": [],
+            "question_keywords": [],
+            "content_angle": blog_angle or "Comprehensive guide",
+            "recommended_structure": ["Introduction", "Main Content", "Conclusion"],
+            "recommended_word_count": "2000-3000 words",
+            "ranking_feasibility": "moderate",
+            "writing_instructions": "Write comprehensive, SEO-optimized content"
+        }
 
 # ================= SAVE OUTPUT =================
 def save_research_briefs(research_briefs):
@@ -181,91 +270,58 @@ def save_research_briefs(research_briefs):
 def generate_resource_link(query):
     return f"https://www.google.com/search?q={query.replace(' ', '+')}"
 
-# ================= STREAMLIT UI =================
-st.set_page_config(page_title="SERP Research Agent", layout="wide")
-st.title("🔍 SERP Research Agent ")
-
-st.markdown("**provide context manually:**")
-topic = st.text_input("Context :", placeholder="Eg: AI for school students")
-target_audience = st.text_input("Target Audience :", placeholder="Eg: Kids aged 10–14")
-content_goal = st.selectbox(
-    "Content Goal :",
-    ["Educational", "Informational", "Commercial", "Brand Authority"]
-)
-brand = st.text_input("Brand :", placeholder="Eg: AstroKids")
-blog_count = st.radio(
-    label="Number of Blogs to Generate :",
-    options=["1", "2", "3", "4", "5"],
-    horizontal=True,
-)
-region = st.text_input("Region :", placeholder="Eg: India")
-
-uploaded_file = st.file_uploader("Upload PDF or TXT document (optional)")
-if st.button("🚀 Run SERP Research Agent"):
-
-    blog_count_int = int(blog_count)
-
-    # Decide input source
-    if uploaded_file:
-        text = extract_text(uploaded_file)
+# ================= MAIN RESEARCH AGENT FUNCTION =================
+async def run_research_agent(request_data: ResearchRequest, file_content=None):
+    """Main research agent workflow - same logic as Streamlit version"""
+    
+    # Decide input source (same as Streamlit if/else logic)
+    if file_content:
+        text = extract_text_from_pdf(file_content)
         context_data = extract_topic_with_llm(text)
         context = {
             "topic": context_data.get("core_topic", ""),
             "target_audience": context_data.get("target_audience", ""),
-            "content_goal": content_goal,
-            "brand": brand,
-            "region": region,
+            "content_goal": request_data.content_goal,
+            "brand": request_data.brand,
+            "region": request_data.region,
             "search_intent": context_data.get("search_intent", "")
         }
     else:
-        if not topic or not target_audience:
-            st.error("❗ Please provide at least Topic and Target Audience.")
-            st.stop()
+        # Validate topic and target_audience (same as Streamlit)
+        if not request_data.topic or not request_data.target_audience:
+            return {
+                "status": "error",
+                "message": "❗ Please provide at least Topic and Target Audience."
+            }
         context = {
-            "topic": topic,
-            "target_audience": target_audience,
-            "content_goal": content_goal,
-            "brand": brand,
-            "region": region
+            "topic": request_data.topic,
+            "target_audience": request_data.target_audience,
+            "content_goal": request_data.content_goal,
+            "brand": request_data.brand,
+            "region": request_data.region
         }
 
-    with st.spinner("Analyzing SERP & competitors..."):
-        serp_data = fetch_serp(context["topic"])
-        serp_analysis = analyze_serp_with_llm(serp_data)
+    # Analyzing SERP & competitors (same as Streamlit spinner)
+    serp_data = fetch_serp(context["topic"])
+    serp_analysis = analyze_serp_with_llm(serp_data)
 
-        # Generate blog angles and research briefs
-        blog_angles = generate_blog_angles(context, blog_count_int)
-        all_research_briefs = []
+    # Generate blog angles and research briefs (same as Streamlit loop)
+    blog_angles = generate_blog_angles(context, request_data.blog_count)
+    all_research_briefs = []
 
-        for idx, angle in enumerate(blog_angles, start=1):
-            brief = generate_research_brief(context, serp_analysis, angle)
-            brief["blog_number"] = idx
-            brief["blog_angle"] = angle
-            all_research_briefs.append(brief)
+    for idx, angle in enumerate(blog_angles, start=1):
+        brief = generate_research_brief(context, serp_analysis, angle)
+        brief["blog_number"] = idx
+        brief["blog_angle"] = angle
+        all_research_briefs.append(brief)
 
-        output_path = save_research_briefs(all_research_briefs)
+    # Save research briefs (same as Streamlit)
+    output_path = save_research_briefs(all_research_briefs)
 
-    with st.expander("📊 Research Briefs (Output for Writing Agent)", expanded=False):
-        for brief in all_research_briefs:
-            st.markdown(f"## 📝 Blog {brief['blog_number']}")
-            st.markdown(f"**Angle:** {brief['blog_angle']}")
-            st.markdown(f"### 🎯 Primary Keyword\n**{brief['primary_keyword']}** [🔗]({generate_resource_link(brief['primary_keyword'])})")
-
-            st.markdown("### 🔑 Secondary Keywords")
-            for kw in brief["secondary_keywords"]:
-                st.markdown(f"- {kw} [🔗]({generate_resource_link(kw)})")
-
-            st.markdown("### ❓ Question Keywords")
-            for q in brief["question_keywords"]:
-                st.markdown(f"- {q} [🔗]({generate_resource_link(q)})")
-
-            st.markdown(f"### 🧠 Content Angle\n{brief['content_angle']}")
-            st.markdown("### 🧱 Recommended Structure")
-            for sec in brief["recommended_structure"]:
-                st.markdown(f"- {sec}")
-
-            st.markdown(f"### 📏 Word Count\n{brief['recommended_word_count']}")
-            st.markdown(f"### 🚀 Ranking Feasibility\n{brief['ranking_feasibility']}")
-            st.markdown(f"### ✍️ Writing Instructions\n{brief['writing_instructions']}")
-
-    st.success(f"✅ Research Briefs saved at: {output_path}")
+    return {
+        "status": "success",
+        "message": f"✅ Research Briefs saved at: {output_path}",
+        "context": context,
+        "serp_analysis": serp_analysis,
+        "research_briefs": all_research_briefs
+    }

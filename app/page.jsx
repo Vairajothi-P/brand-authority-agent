@@ -14,7 +14,7 @@ export default function Home() {
     function renderValue(v) {
         if (v === null || v === undefined) return null;
         if (typeof v === "string" || typeof v === "number") return <span> {v}</span>;
-        if (Array.isArray(v)) return <ul className="list-disc ml-5">{v.map((x,i)=><li key={i}>{x}</li>)}</ul>;
+        if (Array.isArray(v)) return <div className="list-disc ml-5">{v.map((x,i)=><div key={i}>• {x}</div>)}</div>;
         return null;
     }
 
@@ -30,7 +30,17 @@ export default function Home() {
         });
 
         const data = await res.json();
-        setResults(data);
+        
+        if (data.status === "success" && data.research_briefs) {
+            setResults(data.research_briefs);
+            setMessage(data.message || "✅ Research completed");
+        } else if (data.research_briefs) {
+            setResults(data.research_briefs);
+        } else if (Array.isArray(data)) {
+            setResults(data);
+        } else {
+            setError(data.message || "Failed to get results");
+        }
         setLoading(false);
     }
 
@@ -84,15 +94,17 @@ export default function Home() {
             {message && <p className="text-green-400 text-center mt-4">{message}</p>}
 
             <div className="mt-8 space-y-6 max-w-5xl mx-auto">
-                {results.map((b,i)=>(
+                {results && Array.isArray(results) && results.map((b,i)=>(
                     <div key={i} className="bg-white/10 p-6 rounded-xl">
                         <h3 className="text-xl font-bold">Blog {b.blog_number}</h3>
-                        <p className="text-indigo-300">{b.blog_angle}</p>
-                        <p><b>Primary:</b>{renderValue(b.primary_keyword)}</p>
-                        <p><b>Secondary:</b>{renderValue(b.secondary_keywords)}</p>
-                        <p><b>Questions:</b>{renderValue(b.question_keywords)}</p>
-                        <p><b>Structure:</b>{renderValue(b.recommended_structure)}</p>
-                        <p><b>Instructions:</b>{renderValue(b.writing_instructions)}</p>
+                        <div className="text-indigo-300">
+                            {typeof b.blog_angle === 'object' ? b.blog_angle?.title || b.blog_angle?.description : b.blog_angle}
+                        </div>
+                        <div><b>Primary:</b>{renderValue(b.primary_keyword)}</div>
+                        <div><b>Secondary:</b>{renderValue(b.secondary_keywords)}</div>
+                        <div><b>Questions:</b>{renderValue(b.question_keywords)}</div>
+                        <div><b>Structure:</b>{renderValue(b.recommended_structure)}</div>
+                        <div><b>Instructions:</b>{renderValue(b.writing_instructions)}</div>
                     </div>
                 ))}
             </div>

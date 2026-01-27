@@ -33,11 +33,34 @@ export default function WritingPage() {
         setMessage("");
 
         try {
+            // Load the latest research brief
+            const briefRes = await fetch("/api/research-agent", {
+                method: "GET",
+            });
+
+            let brief = "No brief available";
+            if (briefRes.ok) {
+                try {
+                    const briefData = await briefRes.json();
+                    if (briefData.research_briefs && briefData.research_briefs.length > 0) {
+                        brief = JSON.stringify(briefData.research_briefs[0]);
+                    }
+                } catch (e) {
+                    console.log("Could not load brief from research-agent endpoint");
+                }
+            }
+
+            const formData = new FormData();
+            formData.append("brief", brief);
+
             const res = await fetch("/api/writing-agent", {
                 method: "POST",
+                body: formData,
             });
 
             if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Response error:", errorText);
                 throw new Error(`HTTP error! status: ${res.status}`);
             }
 

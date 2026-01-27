@@ -2,15 +2,15 @@ import json
 import os
 import time
 from pathlib import Path
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # ================= ENV =================
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-if not openai.api_key:
-    raise Exception("❌ OPENAI_API_KEY not set")
+if not os.getenv("GEMINI_API_KEY"):
+    raise Exception("❌ GEMINI_API_KEY not set")
 
 # ================= PATHS =================
 BASE_DIR = Path(__file__).resolve().parent
@@ -35,13 +35,16 @@ def load_md(path):
         raise FileNotFoundError(f"❌ Missing file: {path}")
     return path.read_text(encoding="utf-8")
 
-def safe_openai_call(fn):
+def safe_gemini_call(fn):
     while True:
         try:
             return fn()
-        except openai.error.RateLimitError:
-            print(f"⏳ Rate limit hit. Waiting {RATE_WAIT}s...")
-            time.sleep(RATE_WAIT)
+        except Exception as e:
+            if "429" in str(e) or "rate" in str(e).lower():
+                print(f"⏳ Rate limit hit. Waiting {RATE_WAIT}s...")
+                time.sleep(RATE_WAIT)
+            else:
+                raise
 
 # ================= BRAND SCORING AGENT =================
 def brand_score_agent(article, research, summary):
@@ -82,16 +85,16 @@ Return ONLY valid JSON:
 }}
 """
 
-    response = safe_openai_call(lambda: openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a brand auditor"},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0
+    model = genai.GenerativeModel(
+        model_name="gemini-2.5-flash",
+        system_instruction="You are a brand auditor"
+    )
+    response = safe_gemini_call(lambda: model.generate_content(
+        prompt,
+        generation_config=genai.types.GenerationConfig(temperature=0)
     ))
 
-    return json.loads(response["choices"][0]["message"]["content"])
+    return json.loads(response.text)
 
 # ================= REWRITE AGENT =================
 def rewrite_article(article, brand_report, research, summary):
@@ -121,16 +124,16 @@ Article:
 Return ONLY rewritten markdown.
 """
 
-    response = safe_openai_call(lambda: openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a brand editor"},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.4
+    model = genai.GenerativeModel(
+        model_name="gemini-2.5-flash",
+        system_instruction="You are a brand editor"
+    )
+    response = safe_gemini_call(lambda: model.generate_content(
+        prompt,
+        generation_config=genai.types.GenerationConfig(temperature=0.4)
     ))
 
-    return response["choices"][0]["message"]["content"]
+    return response.text
 
 # ================= MAIN =================
 def run():

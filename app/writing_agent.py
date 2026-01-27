@@ -2,16 +2,15 @@ import os
 import json
 import time
 import re
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
-from openai.error import RateLimitError
 
 # ================= ENV =================
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-if not openai.api_key:
-    raise Exception("❌ OPENAI_API_KEY set pannala")
+if not os.getenv("GEMINI_API_KEY"):
+    raise Exception("❌ GEMINI_API_KEY not set")
 
 # ================= PATH CONFIG =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,14 +27,17 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 RATE_LIMIT_WAIT = 20
 
 # ================= UTILS =================
-def call_openai_with_retry(fn, retries=5):
+def call_gemini_with_retry(fn, retries=5):
     for _ in range(retries):
         try:
             return fn()
-        except RateLimitError:
-            print(f"⏳ Rate limit hit. Waiting {RATE_LIMIT_WAIT}s...")
-            time.sleep(RATE_LIMIT_WAIT)
-    raise Exception("❌ OpenAI retry limit exhausted")
+        except Exception as e:
+            if "429" in str(e) or "rate" in str(e).lower():
+                print(f"⏳ Rate limit hit. Waiting {RATE_LIMIT_WAIT}s...")
+                time.sleep(RATE_LIMIT_WAIT)
+            else:
+                raise
+    raise Exception("❌ Gemini retry limit exhausted")
 
 def extract_json(text):
     text = re.sub(r"```json|```", "", text)
@@ -111,16 +113,16 @@ Return ONLY JSON:
 }}
 """
 
-        res = call_openai_with_retry(lambda: openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Return clean JSON only"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.4
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction="Return clean JSON only"
+        )
+        res = call_gemini_with_retry(lambda: model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(temperature=0.4)
         ))
 
-        data = extract_json(res["choices"][0]["message"]["content"])
+        data = extract_json(res.text)
         article.sections = data["sections"]
         print("🗂 Sections created (context-aware)")
 
@@ -171,16 +173,16 @@ Rules:
 Return ONLY article content.
 """
 
-        res = call_openai_with_retry(lambda: openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Expert parenting writer focused on practical tips. Never include astrology definitions or technical details. Focus on real parenting advice."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.65
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction="Expert parenting writer focused on practical tips. Never include astrology definitions or technical details. Focus on real parenting advice."
+        )
+        res = call_gemini_with_retry(lambda: model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(temperature=0.65)
         ))
 
-        article.article = res["choices"][0]["message"]["content"]
+        article.article = res.text
         print("📝 Article generated (research + summary aligned)")
 
 class OutputAgent:

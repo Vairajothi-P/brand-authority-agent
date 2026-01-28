@@ -2,7 +2,7 @@ import os
 import json
 import time
 import requests
-import google.generativeai as genai
+import openai
 from pypdf import PdfReader
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -10,9 +10,7 @@ from io import BytesIO
 
 # ================= ENV =================
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+openai.api_key = os.getenv("OPENAI_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
 
 OUTPUT_DIR = "agent_outputs"
@@ -27,28 +25,23 @@ class ResearchRequest(BaseModel):
     region: str
     blog_count: int
 
-# ================= GEMINI CONNECTOR =================
-def call_gemini(prompt, system_role, model="gemini-2.5-flash", temperature=0.3):
+# ================= OPENAI CONNECTOR =================
+def call_openai(prompt, system_role, model="gpt-4o-mini", temperature=0.3):
     for _ in range(5):
         try:
-            model_obj = genai.GenerativeModel(
-                model_name=model,
-                system_instruction=system_role,
+            return openai.ChatCompletion.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_role},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=temperature
             )
-            response = model_obj.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    top_p=0.95,
-                    top_k=40,
-                )
-            )
-            return response
         except Exception as e:
-            print(f"⏳ Gemini error: {e}. Retrying...")
+            print(f"⏳ OpenAI error: {e}. Retrying...")
             time.sleep(RATE_LIMIT_WAIT)
 
-    raise Exception("❌ Gemini failed after retries")
+    raise Exception("❌ OpenAI failed after retries")
 
 # ================= JSON EXTRACTION HELPER =================
 def extract_json_from_response(content):
@@ -103,14 +96,14 @@ Document:
 {text[:3000]}
 """
 
-    res = call_gemini(
+    res = call_openai(
         prompt=prompt,
         system_role="Topic analysis agent. JSON only.",
         temperature=0.2
     )
 
     try:
-        content = res.text.strip()
+        content = res["choices"][0]["message"]["content"].strip()
         content = extract_json_from_response(content)
         return json.loads(content)
     except (json.JSONDecodeError, KeyError, IndexError) as e:
@@ -152,7 +145,7 @@ SERP DATA:
 {json.dumps(serp_data)[:6000]}
 """
 
-    res = call_gemini(
+    res = call_openai(
         prompt=prompt,
         system_role="SEO SERP research agent. JSON only.",
         temperature=0.3
@@ -160,13 +153,13 @@ SERP DATA:
 
     # Extract content safely
     try:
-        if not res or not hasattr(res, 'text'):
+        if not res or "choices" not in res:
             print(f"⚠️ Unexpected response structure: {res}")
-            raise ValueError("Invalid response from Gemini")
+            raise ValueError("Invalid response from OpenAI")
         
-        content = res.text.strip()
+        content = res["choices"][0]["message"]["content"].strip()
         if not content:
-            print("⚠️ Empty content received from Gemini")
+            print("⚠️ Empty content received from OpenAI")
             raise ValueError("Empty response content")
         
         # Extract JSON from potential markdown wrapping
@@ -202,13 +195,13 @@ Return ONLY JSON:
 Context:
 {json.dumps(context, indent=2)}
 """
-    res = call_gemini(
+    res = call_openai(
         prompt=prompt,
         system_role="Content ideation agent. JSON only.",
         temperature=0.4
     )
     try:
-        content = res.text.strip()
+        content = res["choices"][0]["message"]["content"].strip()
         content = extract_json_from_response(content)
         data = json.loads(content)
         return data.get("angles", [])
@@ -242,13 +235,13 @@ SERP Analysis:
 Blog Angle:
 {blog_angle if blog_angle else ""}
 """
-    res = call_gemini(
+    res = call_openai(
         prompt=prompt,
         system_role="Content strategy agent. JSON only.",
         temperature=0.25
     )
     try:
-        content = res.text.strip()
+        content = res["choices"][0]["message"]["content"].strip()
         content = extract_json_from_response(content)
         return json.loads(content)
     except (json.JSONDecodeError, KeyError, IndexError) as e:

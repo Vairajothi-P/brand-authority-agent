@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from research_agent import run_research_agent, ResearchRequest
@@ -80,12 +79,8 @@ async def writing_agent_endpoint(brief: str = Form(...)):
     try:
         # Import the writing agent if it exists, otherwise use a placeholder
         try:
+            from research_agent import call_openai
             import json
-            import google.generativeai as genai
-            from dotenv import load_dotenv
-            
-            load_dotenv()
-            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
             
             prompt = f"""
 You are an expert content writer.
@@ -102,16 +97,13 @@ Write a complete, SEO-optimized article with:
 
 Return the article content."""
             
-            model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash",
-                system_instruction="Expert content writer"
-            )
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(temperature=0.7)
+            response = call_openai(
+                prompt=prompt,
+                system_role="Expert content writer",
+                temperature=0.7
             )
             
-            article_content = response.text
+            article_content = response["choices"][0]["message"]["content"]
             
             return {
                 "status": "success",
@@ -155,17 +147,3 @@ async def refine_output_endpoint(content: str = Form(...)):
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-@app.post("/branding-agent")
-async def branding_agent_endpoint():
-    try:
-        from branding_agent import run_branding_agent_api
-        result = run_branding_agent_api()
-        return result
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {
-            "status": "error",
-            "message": str(e)
-        }

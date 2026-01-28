@@ -79,7 +79,7 @@ async def writing_agent_endpoint(brief: str = Form(...)):
     try:
         # Import the writing agent if it exists, otherwise use a placeholder
         try:
-            from research_agent import call_openai
+            from research_agent import call_gemini
             import json
             
             prompt = f"""
@@ -97,13 +97,13 @@ Write a complete, SEO-optimized article with:
 
 Return the article content."""
             
-            response = call_openai(
+            response = call_gemini(
                 prompt=prompt,
                 system_role="Expert content writer",
                 temperature=0.7
             )
             
-            article_content = response["choices"][0]["message"]["content"]
+            article_content = response.text
             
             return {
                 "status": "success",

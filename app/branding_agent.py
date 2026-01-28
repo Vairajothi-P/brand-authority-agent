@@ -21,7 +21,7 @@ ARTICLE_PATH  = BASE_DIR / "outputs" / "article.md"
 OUTPUT_PATH   = BASE_DIR / "outputs" / "article_branded.md"
 
 RATE_WAIT = 30
-SCORE_THRESHOLD = 80
+SCORE_THRESHOLD = 50  # Auto-regenerate if below 50%
 
 # ================= HELPERS =================
 def load_json(path):
@@ -134,6 +134,55 @@ Return ONLY rewritten markdown.
     ))
 
     return response.text
+
+# ================= API MODE =================
+def run_branding_agent_api():
+    """Run branding agent for API - auto-regenerate if score < 50%"""
+    try:
+        # Load inputs
+        summary = load_json(SUMMARY_PATH)
+        article = load_md(ARTICLE_PATH)
+        
+        # Evaluate
+        report = brand_score_agent(article, summary, {})
+        initial_score = report['overall_score']
+        
+        # Auto-regenerate if score < 50%
+        if initial_score < SCORE_THRESHOLD:
+            print(f"⚠️ Score {initial_score}% < {SCORE_THRESHOLD}%. Auto-regenerating...")
+            rewritten = rewrite_article(article, report, {}, summary)
+            
+            # Re-evaluate
+            new_report = brand_score_agent(rewritten, summary, {})
+            final_score = new_report['overall_score']
+            
+            # Save regenerated article
+            OUTPUT_PATH.write_text(rewritten, encoding="utf-8")
+            
+            return {
+                "status": "success",
+                "initial_score": initial_score,
+                "final_score": final_score,
+                "auto_regenerated": True,
+                "article": rewritten,
+                "breakdown": new_report["breakdown"]
+            }
+        else:
+            # Score >= 50%, just save original
+            OUTPUT_PATH.write_text(article, encoding="utf-8")
+            return {
+                "status": "success",
+                "initial_score": initial_score,
+                "final_score": initial_score,
+                "auto_regenerated": False,
+                "article": article,
+                "breakdown": report["breakdown"]
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 # ================= MAIN =================
 def run():

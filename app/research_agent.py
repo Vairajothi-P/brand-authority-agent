@@ -10,7 +10,9 @@ from io import BytesIO
 
 # ================= ENV =================
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+if api_key:
+    genai.configure(api_key=api_key)
 SERP_API_KEY = os.getenv("SERP_API_KEY")
 
 OUTPUT_DIR = "agent_outputs"

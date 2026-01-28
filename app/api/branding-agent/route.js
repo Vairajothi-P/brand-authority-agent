@@ -1,6 +1,6 @@
 export async function POST(request) {
     try {
-        const res = await fetch("http://localhost:8001/branding-agent", {
+        const res = await fetch("http://localhost:8003/branding-agent", {
             method: "POST",
         });
 

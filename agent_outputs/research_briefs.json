@@ -1,68 +1,51 @@
 [
   {
-    "primary_keyword": "astrology remedies for kids behavior",
+    "primary_keyword": "AI for kids",
     "secondary_keywords": [
-      "astrology for children",
-      "zodiac signs and behavior",
-      "parenting tips astrology"
+      "what is AI for students",
+      "AI in daily life for kids",
+      "smart tech for kids",
+      "AI games for children",
+      "AstroKids AI",
+      "AI examples for kids",
+      "how AI works for kids"
     ],
     "question_keywords": [
-      "how does astrology affect children's behavior?",
-      "what are the best astrology remedies for kids?",
-      "how to use astrology to understand my child?"
+      "What is AI?",
+      "Where do kids see AI?",
+      "How does AI help kids?",
+      "Is AI safe for kids?",
+      "What are examples of AI for students?",
+      "How does AI work simply?"
     ],
-    "content_angle": "Understanding Your Child's Zodiac Sign: How Astrology Influences Behavior",
+    "content_angle": "Your Secret AI Sidekicks: Discover the Smart Tech Hiding in Your Games & Gadgets! This blog post will take young readers on an exciting 'Astro-mission' to uncover how Artificial Intelligence is already helping them every day \u2013 from recommending videos to making game characters smarter. It will explain AI in simple terms using fun, relatable examples from their world (like smartphones, smart speakers, and video games), encouraging them to spot AI and understand its basic purpose.",
     "recommended_structure": [
-      "Introduction",
-      "Overview of Zodiac Signs",
-      "Behavioral Traits by Zodiac Sign",
-      "Astrology Remedies for Positive Behavior",
-      "Managing Challenging Behaviors with Astrology",
-      "Conclusion"
+      "Catchy, adventurous title and introduction (Astro-mission theme)",
+      "What is AI? (Simple, kid-friendly explanation with an analogy)",
+      "AI in Your Favorite Games (Examples: smart characters, difficulty adjustment, recommendations)",
+      "AI in Your Everyday Gadgets (Examples: smartphones, smart speakers, cameras)",
+      "AI in Your Online World (Examples: video recommendations, search results)",
+      "Why is AI Important for You? (Future skills, understanding the world)",
+      "Your 'Spot the AI' Challenge! (Interactive element)",
+      "Conclusion: AI is Your Smart Sidekick!",
+      "FAQs (Addressing common questions from 'Related Questions' feature)"
     ],
-    "recommended_word_count": "1200-1500",
-    "ranking_feasibility": "moderate",
-    "writing_instructions": "Create an engaging and informative article that explains how astrology can provide insights into children's behavior. Use clear headings, bullet points for remedies, and include examples for each zodiac sign. Ensure the content is relatable for parents and includes practical tips.",
+    "recommended_word_count": "800-1200 words",
+    "ranking_feasibility": "Low to Moderate",
+    "writing_instructions": "Write in a fun, engaging, and adventurous tone, consistent with the 'AstroKids' brand. The language must be simple and easy for 10-14 year olds to understand, avoiding jargon. Use relatable examples from the daily lives of Indian school students (e.g., popular games, apps, gadgets). The goal is to educate and demystify AI, focusing on its helpful and present-day applications rather than complex future implications or ethical debates. Address the competitor weaknesses by providing highly specific, practical, and interactive examples tailored for K-12 students. Aim for clear, direct answers that could serve as featured snippets. Consider where inline videos could enhance understanding (e.g., short clips explaining an AI concept or showing an example). Naturally integrate primary and secondary keywords throughout the text.",
     "blog_number": 1,
     "blog_angle": {
-      "angle": "Understanding Your Child's Zodiac Sign: How Astrology Influences Behavior",
-      "search_intent": "Informational",
-      "sub_topic": "Exploring the characteristics of each zodiac sign and how they relate to common behavioral traits in children.",
-      "description": "This blog will delve into the traits associated with each zodiac sign, providing parents with insights into how their child's astrological profile can explain certain behaviors. It will include tips on how to nurture positive traits and manage challenging behaviors based on astrological insights."
-    }
-  },
-  {
-    "primary_keyword": "astrology remedies for kids behavior",
-    "secondary_keywords": [
-      "astrology for parenting",
-      "children behavior astrology",
-      "astrological remedies for children"
-    ],
-    "question_keywords": [
-      "how can astrology help with children's behavior?",
-      "what are astrology remedies for tantrums?",
-      "how to use astrology for child anxiety?"
-    ],
-    "content_angle": "Astrological Remedies for Common Behavioral Issues in Children",
-    "recommended_structure": [
-      "Introduction",
-      "Understanding Children's Behavior through Astrology",
-      "Common Behavioral Issues in Children",
-      "Astrological Remedies for Tantrums",
-      "Astrological Remedies for Anxiety",
-      "Astrological Remedies for Stubbornness",
-      "Implementing Remedies at Home",
-      "Conclusion"
-    ],
-    "recommended_word_count": "1200-1500",
-    "ranking_feasibility": "moderate",
-    "writing_instructions": "Focus on providing practical astrology-based remedies for specific behavioral challenges. Use engaging language and actionable advice. Incorporate relevant examples and rituals that parents can easily implement. Ensure the content is informative and addresses the needs of the target audience.",
-    "blog_number": 2,
-    "blog_angle": {
-      "angle": "Astrological Remedies for Common Behavioral Issues in Children",
-      "search_intent": "Problem-solving",
-      "sub_topic": "Practical astrology-based remedies for specific behavioral challenges faced by children.",
-      "description": "This blog will focus on specific behavioral issues such as tantrums, anxiety, and stubbornness, offering astrology-based remedies and rituals that parents can implement at home. It will provide actionable advice on how to use astrology to create a harmonious environment for their children."
+      "title": "Your Secret AI Sidekicks: Discover the Smart Tech Hiding in Your Games & Gadgets!",
+      "description": "This blog post will take young readers on an exciting 'Astro-mission' to uncover how Artificial Intelligence is already helping them every day \u2013 from recommending videos to making game characters smarter. It will explain AI in simple terms using fun, relatable examples from their world (like smartphones, smart speakers, and video games), encouraging them to spot AI and understand its basic purpose.",
+      "target_intent": "Informational/Discovery (Understanding AI's presence in daily life)",
+      "keywords": [
+        "AI for kids",
+        "what is AI for students",
+        "AI in daily life for kids",
+        "smart tech for kids",
+        "AI games for children",
+        "AstroKids AI"
+      ]
     }
   }
 ]

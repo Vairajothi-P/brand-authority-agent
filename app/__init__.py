@@ -155,3 +155,17 @@ async def refine_output_endpoint(content: str = Form(...)):
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.post("/branding-agent")
+async def branding_agent_endpoint():
+    try:
+        from branding_agent import run_branding_agent_api
+        result = run_branding_agent_api()
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e)
+        }

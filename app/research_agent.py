@@ -23,7 +23,7 @@ class ResearchRequest(BaseModel):
     content_goal: str
     brand: str
     region: str
-    blog_count: int
+
 
 # ================= GEMINI CONNECTOR =================
 def call_gemini(prompt, system_role, model="gemini-2.5-flash", temperature=0.3):
@@ -185,49 +185,25 @@ SERP DATA:
             "ranking_probability": "moderate"
         }
 
-# ================= BLOG ANGLE GENERATOR =================
-def generate_blog_angles(context, count):
-    prompt = f"""
-You are a content strategy expert.
-
-Generate {count} DISTINCT blog angles for the topic below.
-Each angle must target a different search intent or sub-topic.
-
-Return ONLY JSON:
-{{
-  "angles": []
-}}
-
-Context:
-{json.dumps(context, indent=2)}
-"""
-    res = call_gemini(
-        prompt=prompt,
-        system_role="Content ideation agent. JSON only.",
-        temperature=0.4
-    )
-    try:
-        content = res.text.strip()
-        content = extract_json_from_response(content)
-        data = json.loads(content)
-        return data.get("angles", [])
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        print(f"⚠️ Blog angles parsing error: {e}")
-        return [f"Angle {i+1}: Analysis of {context.get('topic', 'topic')}" for i in range(int(count))]
-
 # ================= FINAL RESEARCH BRIEF AGENT =================
-def generate_research_brief(context, serp_analysis, blog_angle=None):
+# ================= FINAL RESEARCH BRIEF AGENT (STRICT) =================
+def generate_research_brief(context, serp_analysis):
     prompt = f"""
-Generate a SERP Research Brief for a Writing Agent.
+You are an SEO research agent.
 
-Return ONLY JSON:
+STRICT RULES:
+- Return ONLY valid JSON
+- Do NOT add markdown
+- Do NOT add explanations
+- Do NOT add extra fields
+- Match the output schema EXACTLY
+
+Output JSON schema:
 {{
   "primary_keyword": "",
   "secondary_keywords": [],
   "question_keywords": [],
   "content_angle": "",
-  "recommended_structure": [],
-  "recommended_word_count": "",
   "ranking_feasibility": "",
   "writing_instructions": ""
 }}
@@ -237,32 +213,31 @@ Context:
 
 SERP Analysis:
 {json.dumps(serp_analysis, indent=2)}
-
-Blog Angle:
-{blog_angle if blog_angle else ""}
 """
+
     res = call_gemini(
         prompt=prompt,
-        system_role="Content strategy agent. JSON only.",
-        temperature=0.25
+        system_role="SEO research agent. Output strict JSON only.",
+        temperature=0.2
     )
+
     try:
         content = res.text.strip()
         content = extract_json_from_response(content)
-        return json.loads(content)
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        print(f"⚠️ Research brief parsing error: {e}")
-        # Return a default research brief structure
+        data = json.loads(content)
+
+        # HARD SCHEMA ENFORCEMENT (safety net)
         return {
-            "primary_keyword": context.get("topic", "keyword"),
-            "secondary_keywords": [],
-            "question_keywords": [],
-            "content_angle": blog_angle or "Comprehensive guide",
-            "recommended_structure": ["Introduction", "Main Content", "Conclusion"],
-            "recommended_word_count": "2000-3000 words",
-            "ranking_feasibility": "moderate",
-            "writing_instructions": "Write comprehensive, SEO-optimized content"
+            "primary_keyword": data.get("primary_keyword", ""),
+            "secondary_keywords": data.get("secondary_keywords", []),
+            "question_keywords": data.get("question_keywords", []),
+            "content_angle": data.get("content_angle", ""),
+            "ranking_feasibility": data.get("ranking_feasibility", ""),
+            "writing_instructions": data.get("writing_instructions", "")
         }
+
+    except json.JSONDecodeError as e:
+        raise Exception(f"❌ Invalid JSON from Research Agent: {e}")
 
 # ================= SAVE OUTPUT =================
 def save_research_briefs(research_briefs):
@@ -277,10 +252,10 @@ def generate_resource_link(query):
     return f"https://www.google.com/search?q={query.replace(' ', '+')}"
 
 # ================= MAIN RESEARCH AGENT FUNCTION =================
+# ================= MAIN RESEARCH AGENT FUNCTION =================
 async def run_research_agent(request_data: ResearchRequest, file_content=None):
-    """Main research agent workflow - same logic as Streamlit version"""
-    
-    # Decide input source (same as Streamlit if/else logic)
+
+    # ---- CONTEXT ----
     if file_content:
         text = extract_text_from_pdf(file_content)
         context_data = extract_topic_with_llm(text)
@@ -293,12 +268,12 @@ async def run_research_agent(request_data: ResearchRequest, file_content=None):
             "search_intent": context_data.get("search_intent", "")
         }
     else:
-        # Validate topic and target_audience (same as Streamlit)
         if not request_data.topic or not request_data.target_audience:
             return {
                 "status": "error",
-                "message": "❗ Please provide at least Topic and Target Audience."
+                "message": "Topic and Target Audience are required"
             }
+
         context = {
             "topic": request_data.topic,
             "target_audience": request_data.target_audience,
@@ -307,27 +282,11 @@ async def run_research_agent(request_data: ResearchRequest, file_content=None):
             "region": request_data.region
         }
 
-    # Analyzing SERP & competitors (same as Streamlit spinner)
+    # ---- SERP ----
     serp_data = fetch_serp(context["topic"])
     serp_analysis = analyze_serp_with_llm(serp_data)
 
-    # Generate blog angles and research briefs (same as Streamlit loop)
-    blog_angles = generate_blog_angles(context, request_data.blog_count)
-    all_research_briefs = []
+    # ---- FINAL STRICT RESEARCH OUTPUT ----
+    research_output = generate_research_brief(context, serp_analysis)
 
-    for idx, angle in enumerate(blog_angles, start=1):
-        brief = generate_research_brief(context, serp_analysis, angle)
-        brief["blog_number"] = idx
-        brief["blog_angle"] = angle
-        all_research_briefs.append(brief)
-
-    # Save research briefs (same as Streamlit)
-    output_path = save_research_briefs(all_research_briefs)
-
-    return {
-        "status": "success",
-        "message": f"✅ Research Briefs saved at: {output_path}",
-        "context": context,
-        "serp_analysis": serp_analysis,
-        "research_briefs": all_research_briefs
-    }
+    return research_output

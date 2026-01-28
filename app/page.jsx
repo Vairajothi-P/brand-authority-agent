@@ -13,7 +13,10 @@ export default function ResearchPage() {
     const [region, setRegion] = useState("India");
     const [uploadedFile, setUploadedFile] = useState(null);
 
-    // Results state (MODIFIED)
+    // 🔥 NEW: suggestion input state
+    const [suggestion, setSuggestion] = useState("");
+
+    // Results state (unchanged)
     const [loading, setLoading] = useState(false);
     const [researchBrief, setResearchBrief] = useState(null);
     const [error, setError] = useState("");
@@ -34,7 +37,14 @@ export default function ResearchPage() {
             formData.append("content_goal", contentGoal);
             formData.append("brand", brand);
             formData.append("region", region);
-            formData.append("blog_count", blogCount); // harmless, ignored by backend
+            formData.append("blog_count", blogCount); // unchanged
+
+            // 🔥 NEW: send suggestion text
+            if (suggestion) {
+                formData.append("suggestion", suggestion);
+            }
+
+            // existing file upload
             if (uploadedFile) {
                 formData.append("file", uploadedFile);
             }
@@ -46,7 +56,6 @@ export default function ResearchPage() {
 
             const data = await res.json();
 
-            // 🔑 STRICT OUTPUT HANDLING
             setResearchBrief(data);
             setMessage("✅ Research brief generated successfully");
 
@@ -80,7 +89,7 @@ export default function ResearchPage() {
                 </Link>
             </div>
 
-            {/* FORM (UNCHANGED) */}
+            {/* FORM (existing structure preserved) */}
             <form
                 onSubmit={handleRunAgent}
                 className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl mb-8"
@@ -136,6 +145,32 @@ export default function ResearchPage() {
                     />
                 </div>
 
+                {/* 🔥 NEW: Suggestion Text Box (style preserved) */}
+                <div className="col-span-2">
+                    <label className="block text-sm font-semibold mb-2">
+                        Suggestions for AI (optional):
+                    </label>
+                    <textarea
+                        value={suggestion}
+                        onChange={(e) => setSuggestion(e.target.value)}
+                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        placeholder="Eg: Focus on newborn care, include Indian cultural beliefs"
+                    />
+                </div>
+
+                {/* existing file upload */}
+                <div className="col-span-2">
+                    <label className="block text-sm font-semibold mb-2">
+                        Upload PDF or TXT (optional):
+                    </label>
+                    <input
+                        type="file"
+                        accept=".pdf,.txt"
+                        onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                    />
+                </div>
+
                 <button
                     type="submit"
                     disabled={loading}
@@ -148,7 +183,7 @@ export default function ResearchPage() {
             {error && <p className="text-red-400 text-center mb-4">❌ {error}</p>}
             {message && <p className="text-green-400 text-center mb-4">{message}</p>}
 
-            {/* 🔥 FINAL STRICT OUTPUT */}
+            {/* OUTPUT (unchanged) */}
             {researchBrief && (
                 <div className="max-w-5xl mx-auto">
                     <div className="bg-white/10 p-6 rounded-xl">
@@ -156,41 +191,12 @@ export default function ResearchPage() {
                             📊 Research Brief (Writing Agent Input)
                         </h2>
 
-                        <p className="mb-2">
-                            <strong>🎯 Primary Keyword:</strong>{" "}
-                            <a
-                                href={generateResourceLink(researchBrief.primary_keyword)}
-                                className="text-blue-300 underline"
-                                target="_blank"
-                            >
-                                {researchBrief.primary_keyword}
-                            </a>
-                        </p>
-
-                        <p className="mb-2">
-                            <strong>🔑 Secondary Keywords:</strong>{" "}
-                            {renderValue(researchBrief.secondary_keywords)}
-                        </p>
-
-                        <p className="mb-2">
-                            <strong>❓ Question Keywords:</strong>{" "}
-                            {renderValue(researchBrief.question_keywords)}
-                        </p>
-
-                        <p className="mb-2">
-                            <strong>🧠 Content Angle:</strong>{" "}
-                            {researchBrief.content_angle}
-                        </p>
-
-                        <p className="mb-2">
-                            <strong>🚀 Ranking Feasibility:</strong>{" "}
-                            {researchBrief.ranking_feasibility}
-                        </p>
-
-                        <p>
-                            <strong>✍️ Writing Instructions:</strong>{" "}
-                            {researchBrief.writing_instructions}
-                        </p>
+                        <p><strong>🎯 Primary Keyword:</strong> {researchBrief.primary_keyword}</p>
+                        <p><strong>🔑 Secondary Keywords:</strong> {renderValue(researchBrief.secondary_keywords)}</p>
+                        <p><strong>❓ Question Keywords:</strong> {renderValue(researchBrief.question_keywords)}</p>
+                        <p><strong>🧠 Content Angle:</strong> {researchBrief.content_angle}</p>
+                        <p><strong>🚀 Ranking Feasibility:</strong> {researchBrief.ranking_feasibility}</p>
+                        <p><strong>✍️ Writing Instructions:</strong> {researchBrief.writing_instructions}</p>
                     </div>
                 </div>
             )}

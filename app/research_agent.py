@@ -24,7 +24,6 @@ class ResearchRequest(BaseModel):
     brand: str
     region: str
 
-
 # ================= GEMINI CONNECTOR =================
 def call_gemini(prompt, system_role, model="gemini-2.5-flash", temperature=0.3):
     for attempt in range(5):
@@ -51,27 +50,20 @@ def call_gemini(prompt, system_role, model="gemini-2.5-flash", temperature=0.3):
 
 # ================= JSON EXTRACTION HELPER =================
 def extract_json_from_response(content):
-    """Extract JSON from response that might be wrapped in markdown code blocks"""
     content = content.strip()
-    # Remove markdown code blocks if present
     if content.startswith("```"):
-        # Find the start of actual JSON
         lines = content.split("\n")
         start_idx = 0
         for i, line in enumerate(lines):
             if line.strip().startswith("{") or line.strip().startswith("["):
                 start_idx = i
                 break
-        
-        # Find the end of JSON
         end_idx = len(lines)
         for i in range(len(lines) - 1, -1, -1):
             if lines[i].strip().endswith("}") or lines[i].strip().endswith("]"):
                 end_idx = i + 1
                 break
-        
         content = "\n".join(lines[start_idx:end_idx])
-    
     return content
 
 # ================= DOCUMENT INGESTION =================
@@ -82,6 +74,24 @@ def extract_text_from_pdf(file_content):
         for page in reader.pages
         if page.extract_text()
     )
+
+# ✅ FIXED: supports FastAPI UploadFile, bytes, or None
+def extract_text_from_file(file_content, filename: str | None):
+    if not file_content or not filename:
+        return ""
+
+    filename = filename.lower()
+
+    if filename.endswith(".pdf"):
+        return extract_text_from_pdf(
+            file_content.read() if hasattr(file_content, "read") else file_content
+        )
+
+    if filename.endswith(".txt"):
+        content = file_content.read() if hasattr(file_content, "read") else file_content
+        return content.decode("utf-8", errors="ignore")
+
+    return ""
 
 # ================= TOPIC UNDERSTANDING AGENT =================
 def extract_topic_with_llm(text):
@@ -109,11 +119,9 @@ Document:
     )
 
     try:
-        content = res.text.strip()
-        content = extract_json_from_response(content)
+        content = extract_json_from_response(res.text.strip())
         return json.loads(content)
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        print(f"⚠️ Topic extraction parsing error: {e}")
+    except Exception:
         return {
             "core_topic": "Unknown topic",
             "target_audience": "General audience",
@@ -157,24 +165,10 @@ SERP DATA:
         temperature=0.3
     )
 
-    # Extract content safely
     try:
-        if not res or not hasattr(res, 'text'):
-            print(f"⚠️ Unexpected response structure: {res}")
-            raise ValueError("Invalid response from Gemini")
-        
-        content = res.text.strip()
-        if not content:
-            print("⚠️ Empty content received from Gemini")
-            raise ValueError("Empty response content")
-        
-        # Extract JSON from potential markdown wrapping
-        content = extract_json_from_response(content)
+        content = extract_json_from_response(res.text.strip())
         return json.loads(content)
-    except json.JSONDecodeError as e:
-        print(f"⚠️ JSON parsing error: {e}")
-        print(f"Content was: {content[:500]}")
-        # Return a default structure if parsing fails
+    except Exception:
         return {
             "serp_type": "unknown",
             "serp_features": [],
@@ -186,7 +180,6 @@ SERP DATA:
         }
 
 # ================= FINAL RESEARCH BRIEF AGENT =================
-# ================= FINAL RESEARCH BRIEF AGENT (STRICT) =================
 def generate_research_brief(context, serp_analysis):
     prompt = f"""
 You are an SEO research agent.
@@ -221,72 +214,38 @@ SERP Analysis:
         temperature=0.2
     )
 
-    try:
-        content = res.text.strip()
-        content = extract_json_from_response(content)
-        data = json.loads(content)
+    content = extract_json_from_response(res.text.strip())
+    data = json.loads(content)
 
-        # HARD SCHEMA ENFORCEMENT (safety net)
-        return {
-            "primary_keyword": data.get("primary_keyword", ""),
-            "secondary_keywords": data.get("secondary_keywords", []),
-            "question_keywords": data.get("question_keywords", []),
-            "content_angle": data.get("content_angle", ""),
-            "ranking_feasibility": data.get("ranking_feasibility", ""),
-            "writing_instructions": data.get("writing_instructions", "")
-        }
-
-    except json.JSONDecodeError as e:
-        raise Exception(f"❌ Invalid JSON from Research Agent: {e}")
-
-# ================= SAVE OUTPUT =================
-def save_research_briefs(research_briefs):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    path = f"{OUTPUT_DIR}/research_briefs.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(research_briefs, f, indent=2)
-    return path
-
-# ================= RESOURCE LINK HELPER =================
-def generate_resource_link(query):
-    return f"https://www.google.com/search?q={query.replace(' ', '+')}"
+    return {
+        "primary_keyword": data.get("primary_keyword", ""),
+        "secondary_keywords": data.get("secondary_keywords", []),
+        "question_keywords": data.get("question_keywords", []),
+        "content_angle": data.get("content_angle", ""),
+        "ranking_feasibility": data.get("ranking_feasibility", ""),
+        "writing_instructions": data.get("writing_instructions", "")
+    }
 
 # ================= MAIN RESEARCH AGENT FUNCTION =================
-# ================= MAIN RESEARCH AGENT FUNCTION =================
-async def run_research_agent(request_data: ResearchRequest, file_content=None):
+async def run_research_agent(
+    request_data: ResearchRequest,
+    file_content=None,
+    filename: str | None = None,
+    suggestion: str | None = None
+):
+    context = {
+        "topic": request_data.topic,
+        "target_audience": request_data.target_audience,
+        "content_goal": request_data.content_goal,
+        "brand": request_data.brand,
+        "region": request_data.region,
 
-    # ---- CONTEXT ----
-    if file_content:
-        text = extract_text_from_pdf(file_content)
-        context_data = extract_topic_with_llm(text)
-        context = {
-            "topic": context_data.get("core_topic", ""),
-            "target_audience": context_data.get("target_audience", ""),
-            "content_goal": request_data.content_goal,
-            "brand": request_data.brand,
-            "region": request_data.region,
-            "search_intent": context_data.get("search_intent", "")
-        }
-    else:
-        if not request_data.topic or not request_data.target_audience:
-            return {
-                "status": "error",
-                "message": "Topic and Target Audience are required"
-            }
+        # NEW INPUTS (SAFE)
+        "user_suggestion": suggestion or "",
+        "document_text": extract_text_from_file(file_content, filename)[:3000]
+    }
 
-        context = {
-            "topic": request_data.topic,
-            "target_audience": request_data.target_audience,
-            "content_goal": request_data.content_goal,
-            "brand": request_data.brand,
-            "region": request_data.region
-        }
-
-    # ---- SERP ----
     serp_data = fetch_serp(context["topic"])
     serp_analysis = analyze_serp_with_llm(serp_data)
 
-    # ---- FINAL STRICT RESEARCH OUTPUT ----
-    research_output = generate_research_brief(context, serp_analysis)
-
-    return research_output
+    return generate_research_brief(context, serp_analysis)

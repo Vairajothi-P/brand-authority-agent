@@ -1,46 +1,22 @@
-[
-  {
-    "primary_keyword": "AI in everyday life for kids",
-    "secondary_keywords": [
-      "AI for school students",
-      "how AI helps kids",
-      "AI in games for children",
-      "smart speakers for kids",
-      "AI in learning apps",
-      "camera filters AI",
-      "streaming recommendations AI",
-      "what is AI for kids simple explanation"
-    ],
-    "question_keywords": [
-      "Where do kids use AI?",
-      "How does AI work for kids?",
-      "Is AI good for students?",
-      "What are AI examples for students?",
-      "How does AI help me learn?"
-    ],
-    "content_angle": "Your Secret AI Sidekicks: Where AI Hides in Your Daily Life (and Helps You!)",
-    "recommended_structure": [
-      "Introduction: Meet Your Secret AI Sidekicks!",
-      "What Exactly is AI? (A Super Simple Explanation)",
-      "AI in Your Games: Smart Opponents and Fun Worlds",
-      "AI in Your Smart Speakers & Devices: Your Voice-Activated Helpers",
-      "AI in Your Learning & School Apps: Making Homework Easier",
-      "AI in Your Entertainment: Movies, Music, and Fun Filters",
-      "AI in Your Everyday Tech: From Search to Suggestions",
-      "The Future with Your AI Sidekicks: What's Next?",
-      "Conclusion: Spotting Your AI Friends",
-      "FAQs for Curious Kids"
-    ],
-    "recommended_word_count": "900-1200 words",
-    "ranking_feasibility": "Low to Moderate",
-    "writing_instructions": "1.  **Audience & Tone**: Write specifically for kids aged 10-14. Use simple, engaging language, short sentences, and an enthusiastic, friendly, and curious tone. Avoid jargon and complex technical terms. Imagine explaining exciting new concepts to a smart, eager student.\n2.  **Brand Voice**: Align with AstroKids' brand \u2013 make the content educational, inspiring, and fun. Use analogies and relatable scenarios to connect with the target audience.\n3.  **Content Focus**: The core goal is to demystify AI by showing its practical, everyday presence. Emphasize *recognition* and *relatability* by highlighting how AI is already a helpful 'sidekick' in their daily lives (e.g., in games, smart devices, learning apps, entertainment, camera filters).\n4.  **Examples**: Provide concrete, age-appropriate examples that kids in India might encounter. Focus on how AI *helps* them or makes things more fun/easier.\n5.  **Structure & Clarity**: Use clear, descriptive headings, bullet points, and short paragraphs to make the content easy to scan and digest. Break down complex ideas into bite-sized pieces.\n6.  **SERP Insights**: Address common questions directly and concisely, similar to how featured snippets provide quick answers. Structure the content to allow for potential integration of visual elements (like embedded videos) by keeping paragraphs focused and distinct.\n7.  **Differentiation**: Leverage the 'secret AI sidekick' narrative to make the topic personal and less abstract than competitors. Focus on the child's direct experience with AI, rather than how AI works internally.\n8.  **Goal**: Educate and empower students to understand and appreciate the AI around them, fostering curiosity and a positive outlook on technology.",
-    "blog_number": 1,
-    "blog_angle": {
-      "title": "Your Secret AI Sidekicks: Where AI Hides in Your Daily Life (and Helps You!)",
-      "search_intent": "Informational / Discovery - Kids (or parents) looking to understand where AI is present in a child's everyday world, making it relatable and less abstract.",
-      "sub_topic": "Practical, everyday applications of AI relevant to a 10-14 year old's experiences.",
-      "key_takeaway": "AI isn't just for scientists or robots in movies; it's already a helpful part of your games, apps, smart devices, and even how you learn, making your day easier and more fun.",
-      "why_distinct": "This angle focuses on *recognition* and *relatability* of AI by highlighting its current, tangible presence in a child's personal experiences (e.g., smart speakers, game characters, streaming recommendations, camera filters). It demystifies AI by showing it's not a futuristic concept but an active 'sidekick' they already interact with, rather than explaining how AI works or how to build it."
-    }
-  }
-]
+{
+  "primary_keyword": "astrology for kids",
+  "secondary_keywords": [
+    "kids zodiac signs",
+    "horoscope for children",
+    "learn astrology for kids",
+    "astronomy vs astrology for kids",
+    "what is astrology for kids",
+    "fun astrology facts for kids"
+  ],
+  "question_keywords": [
+    "what is my zodiac sign for kids",
+    "how to explain astrology to a child",
+    "are horoscopes real for kids",
+    "what are the 12 zodiac signs for kids",
+    "how does astrology work for kids",
+    "what is a birth chart for kids"
+  ],
+  "content_angle": "An engaging, educational, and fun introduction to astrology tailored for children aged 10-14, focusing on basic concepts like zodiac signs, planets, and their meanings in a simple, positive, and age-appropriate manner.",
+  "ranking_feasibility": "Cannot determine due to invalid SERP data.",
+  "writing_instructions": "Create content that is highly engaging and easy to understand for a 10-14 year old audience. Use simple language, relatable examples, and a positive, curious tone. Explain complex astrological concepts in a simplified way, perhaps using analogies. Include interactive elements or suggestions for activities. Emphasize the fun and self-discovery aspects of astrology, rather than making definitive predictions. Ensure the content is educational, aligning with the 'AstroKids' brand. Avoid jargon and maintain a lighthearted, encouraging voice. Focus on basic concepts like zodiac signs, ruling planets, and elemental associations. Consider adding a section on the difference between astronomy and astrology."
+}

@@ -24,6 +24,13 @@ class ResearchRequest(BaseModel):
     brand: str
     region: str
 
+# ================= SET OUTPUT PATH =================
+RESEARCH_OUTPUT_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "agent_outputs",
+    "research_briefs.json"
+)
+
 # ================= GEMINI CONNECTOR =================
 def call_gemini(prompt, system_role, model="gemini-2.5-flash", temperature=0.3):
     for attempt in range(5):
@@ -92,6 +99,14 @@ def extract_text_from_file(file_content, filename: str | None):
         return content.decode("utf-8", errors="ignore")
 
     return ""
+
+# ================= SAVE RESEARCH OUTPUT =================
+def save_research_output(output: dict):
+    os.makedirs(os.path.dirname(RESEARCH_OUTPUT_PATH), exist_ok=True)
+
+    with open(RESEARCH_OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
+
 
 # ================= TOPIC UNDERSTANDING AGENT =================
 def extract_topic_with_llm(text):
@@ -248,4 +263,6 @@ async def run_research_agent(
     serp_data = fetch_serp(context["topic"])
     serp_analysis = analyze_serp_with_llm(serp_data)
 
-    return generate_research_brief(context, serp_analysis)
+    output = generate_research_brief(context, serp_analysis)
+    save_research_output(output)
+    return output

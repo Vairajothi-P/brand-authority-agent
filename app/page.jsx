@@ -81,12 +81,6 @@ export default function ResearchPage() {
                 <h1 className="text-4xl font-bold text-center flex-1">
                     🔍 SERP Research Agent
                 </h1>
-                <Link
-                    href="/writing"
-                    className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold"
-                >
-                    📝 Writing Agent
-                </Link>
             </div>
 
             {/* FORM (existing structure preserved) */}
@@ -187,19 +181,69 @@ export default function ResearchPage() {
             {researchBrief && (
                 <div className="max-w-5xl mx-auto">
                     <div className="bg-white/10 p-6 rounded-xl">
-                        <h2 className="text-2xl font-bold mb-4">
+                        <h2 className="text-2xl font-bold mb-6">
                             📊 Research Brief (Writing Agent Input)
                         </h2>
 
-                        <p><strong>🎯 Primary Keyword:</strong> {researchBrief.primary_keyword}</p>
-                        <p><strong>🔑 Secondary Keywords:</strong> {renderValue(researchBrief.secondary_keywords)}</p>
-                        <p><strong>❓ Question Keywords:</strong> {renderValue(researchBrief.question_keywords)}</p>
-                        <p><strong>🧠 Content Angle:</strong> {researchBrief.content_angle}</p>
-                        <p><strong>🚀 Ranking Feasibility:</strong> {researchBrief.ranking_feasibility}</p>
-                        <p><strong>✍️ Writing Instructions:</strong> {researchBrief.writing_instructions}</p>
+                        {/* Primary Keyword */}
+                        <div className="mb-5">
+                            <p className="font-semibold mb-1">🎯 Primary Keyword</p>
+                            <p className="pl-4">{researchBrief.primary_keyword}</p>
+                        </div>
+
+                        {/* Secondary Keywords */}
+                        <div className="mb-5">
+                            <p className="font-semibold mb-1">🔑 Secondary Keywords</p>
+                            <ul className="list-disc pl-8 space-y-1">
+                                {researchBrief.secondary_keywords.map((kw, i) => (
+                                    <li key={i}>{kw}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Question Keywords */}
+                        <div className="mb-5">
+                            <p className="font-semibold mb-1">❓ Question Keywords</p>
+                            <ul className="list-disc pl-8 space-y-1">
+                                {researchBrief.question_keywords.map((q, i) => (
+                                    <li key={i}>{q}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Content Angle */}
+                        <div className="mb-5">
+                            <p className="font-semibold mb-1">🧠 Content Angle</p>
+                            <p className="pl-4 leading-relaxed">{researchBrief.content_angle}</p>
+                        </div>
+
+                        {/* Ranking Feasibility */}
+                        <div className="mb-5">
+                            <p className="font-semibold mb-1">🚀 Ranking Feasibility</p>
+                            <p className="pl-4">{researchBrief.ranking_feasibility}</p>
+                        </div>
+
+                        {/* Writing Instructions */}
+                        <div>
+                            <p className="font-semibold mb-1">✍️ Writing Instructions</p>
+                            <p className="pl-4 leading-relaxed">
+                                {researchBrief.writing_instructions}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Writing Agent Button */}
+                    <div className="mt-6 text-center">
+                        <Link
+                            href="/writing"
+                            className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold inline-block"
+                        >
+                            📝 Run Writing Agent
+                        </Link>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

@@ -7,12 +7,13 @@ export default function WritingPage() {
     const [loading, setLoading] = useState(false);
     const [article, setArticle] = useState("");
     const [metadata, setMetadata] = useState({});
+    const [suggestion, setSuggestion] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
 
     useEffect(() => {
-        // Load existing article on page load
-        loadArticle();
+        // Auto-run writing agent on page load
+        runWritingAgent();
     }, []);
 
     async function loadArticle() {
@@ -27,7 +28,7 @@ export default function WritingPage() {
         }
     }
 
-    async function runWritingAgent() {
+    async function runWritingAgent(suggestionText = null) {
         setLoading(true);
         setError("");
         setMessage("");
@@ -52,6 +53,11 @@ export default function WritingPage() {
 
             const formData = new FormData();
             formData.append("brief", brief);
+            // include optional suggestion/feedback for refinement
+            const suggestionToSend = suggestionText ?? suggestion;
+            if (suggestionToSend) {
+                formData.append("suggestion", suggestionToSend);
+            }
 
             const res = await fetch("/api/writing-agent", {
                 method: "POST",
@@ -97,34 +103,19 @@ export default function WritingPage() {
         document.body.removeChild(element);
     }
 
+    function clearArticle() {
+        setArticle("");
+        setMetadata({});
+        setMessage("");
+        setError("");
+        setSuggestion("");
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-10">
             <h1 className="text-4xl font-bold text-center mb-8">📝 Writing Agent</h1>
 
-            <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto mb-8">
-                <button 
-                    onClick={runWritingAgent}
-                    disabled={loading}
-                    className="col-span-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
-                >
-                    {loading ? "⏳ Generating..." : "🚀 Generate Article"}
-                </button>
-                
-                <button 
-                    onClick={downloadArticle}
-                    disabled={!article}
-                    className="col-span-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
-                >
-                    ⬇️ Download MD
-                </button>
-
-                <button 
-                    onClick={loadArticle}
-                    className="col-span-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-semibold"
-                >
-                    🔄 Reload
-                </button>
-            </div>
+            
 
             {loading && <p className="text-center mt-4 text-lg">⏳ Generating article...</p>}
             {error && <p className="text-red-400 text-center mt-4 font-semibold">{error}</p>}
@@ -155,6 +146,44 @@ export default function WritingPage() {
                         {article}
                     </ReactMarkdown>
                 </div>
+            )}
+
+            {/* Suggestion box + Re-run and Download buttons (bottom) - show only after article exists */}
+            {article && (
+            <div className="max-w-4xl mx-auto mt-6 mb-16">
+                <label className="block text-sm font-semibold mb-2">Suggestion / Feedback (optional):</label>
+                <textarea
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    placeholder="Add a suggestion or edits for the writing agent..."
+                    className="w-full min-h-[100px] p-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-300 mb-4"
+                />
+
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => runWritingAgent(suggestion)}
+                        disabled={loading}
+                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
+                    >
+                        {loading ? "⏳ Running..." : "🔁 Re-run with Suggestions"}
+                    </button>
+
+                    <button
+                        onClick={downloadArticle}
+                        disabled={!article}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
+                    >
+                        ⬇️ Download MD
+                    </button>
+
+                    <button
+                        onClick={() => setSuggestion("")}
+                        className="bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded-xl font-semibold"
+                    >
+                        ✖️ Clear Suggestion
+                    </button>
+                </div>
+            </div>
             )}
         </div>
     );

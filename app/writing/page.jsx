@@ -182,6 +182,12 @@ export default function WritingPage() {
                     >
                         ✖️ Clear Suggestion
                     </button>
+                        <Link
+                            href="/branding"
+                            className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold inline-block"
+                        >
+                            📝 Run Branding Agent
+                        </Link>
                 </div>
             </div>
             )}

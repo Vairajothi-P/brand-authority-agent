@@ -1,6 +1,13 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from research_agent import run_research_agent, ResearchRequest
+import os
+import json
+
+# Pydantic model for branding request
+class BrandingRequest(BaseModel):
+    suggestion: str = ""
 
 app = FastAPI()
 
@@ -16,6 +23,19 @@ app.add_middleware(
 @app.get("/")
 async def health_check():
     return {"status": "ok", "message": "FastAPI backend running"}
+
+# Serve a tiny inline favicon (SVG) to avoid 404 logs from browsers requesting /favicon.ico
+from fastapi.responses import Response
+
+@app.get("/favicon.ico")
+async def favicon():
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+        '<rect width="16" height="16" fill="#111827"/>'
+        '<text x="8" y="11" font-size="9" fill="#ffffff" text-anchor="middle" font-family="Arial">BA</text>'
+        '</svg>'
+    )
+    return Response(content=svg, media_type="image/svg+xml")
 
 @app.post("/run-research-agent")
 async def research_agent_handler(
@@ -147,3 +167,23 @@ async def refine_output_endpoint(content: str = Form(...)):
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.post("/branding-agent")
+async def branding_agent_endpoint(request_data: BrandingRequest):
+    try:
+        from branding_agent import run_branding_agent
+        
+        suggestion = request_data.suggestion if request_data.suggestion else None
+        print(f"🔍 Branding agent called with suggestion: {suggestion}")
+        
+        result = await run_branding_agent(suggestion=suggestion)
+        print(f"✅ Branding agent result: {result}")
+        return result
+    except Exception as e:
+        import traceback
+        print(f"❌ Error in branding agent:")
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e),
+        }

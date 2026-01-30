@@ -35,17 +35,6 @@ def load_md(path):
         raise FileNotFoundError(f"❌ Missing file: {path}")
     return path.read_text(encoding="utf-8")
 
-def safe_gemini_call(fn):
-    while True:
-        try:
-            return fn()
-        except Exception as e:
-            if "429" in str(e) or "rate" in str(e).lower():
-                print(f"⏳ Rate limit hit. Waiting {RATE_WAIT}s...")
-                time.sleep(RATE_WAIT)
-            else:
-                raise
-
 # ================= BRAND SCORING AGENT =================
 def brand_score_agent(article, research, summary):
     prompt = f"""
@@ -89,12 +78,31 @@ Return ONLY valid JSON:
         model_name="gemini-2.5-flash",
         system_instruction="You are a brand auditor"
     )
-    response = safe_gemini_call(lambda: model.generate_content(
+    response = model.generate_content(
         prompt,
         generation_config=genai.types.GenerationConfig(temperature=0)
-    ))
+    )
 
-    return json.loads(response.text)
+    text = (response.text or "").strip()
+    # Debugging: show raw response when parsing fails
+    if not text:
+        raise Exception("Empty response from model when computing brand score")
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Try to extract a JSON object from the text (in case model prepended commentary)
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            candidate = text[start:end+1]
+            try:
+                return json.loads(candidate)
+            except Exception:
+                pass
+        # If still failing, raise with a helpful message including a snippet of the response
+        snippet = text[:1000].replace('\n', ' ')
+        raise Exception(f"Invalid JSON from model when computing brand score. Response snippet: {snippet}")
 
 # ================= REWRITE AGENT =================
 def rewrite_article(article, brand_report, research, summary):
@@ -128,61 +136,104 @@ Return ONLY rewritten markdown.
         model_name="gemini-2.5-flash",
         system_instruction="You are a brand editor"
     )
-    response = safe_gemini_call(lambda: model.generate_content(
+    response = model.generate_content(
         prompt,
         generation_config=genai.types.GenerationConfig(temperature=0.4)
-    ))
+    )
 
     return response.text
 
 # ================= API MODE =================
-def run_branding_agent_api():
-    """Run branding agent for API - auto-regenerate if score < 50%"""
+def run_branding_agent_api(suggestion=None):
+    """Run branding agent for API - evaluate and optionally rewrite"""
     try:
         # Load inputs
         summary = load_json(SUMMARY_PATH)
         article = load_md(ARTICLE_PATH)
-        
+        research = load_json(RESEARCH_PATH)
+
         # Evaluate
-        report = brand_score_agent(article, summary, {})
+        report = brand_score_agent(article, research, summary)
         initial_score = report['overall_score']
         
-        # Auto-regenerate if score < 50%
-        if initial_score < SCORE_THRESHOLD:
-            print(f"⚠️ Score {initial_score}% < {SCORE_THRESHOLD}%. Auto-regenerating...")
-            rewritten = rewrite_article(article, report, {}, summary)
+        final_article = article
+        final_score = initial_score
+        
+        print(f"📊 Initial score: {initial_score}%")
+        
+        # Only rewrite if suggestion provided
+        if suggestion:
+            print(f"✍️ Rewriting with suggestion: {suggestion}")
+            
+            # Rewrite with user suggestion
+            prompt = f"""
+You are a SENIOR BRAND EDITOR.
+
+Brand Voice:
+{json.dumps(summary, indent=2)}
+
+User Feedback:
+{suggestion}
+
+Article:
+{article}
+
+Rewrite the article considering the user's feedback while maintaining brand voice.
+Return ONLY rewritten markdown.
+"""
+            model = genai.GenerativeModel(
+                model_name="gemini-2.5-flash",
+                system_instruction="You are a brand editor"
+            )
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(temperature=0.4)
+            )
+            final_article = response.text
             
             # Re-evaluate
-            new_report = brand_score_agent(rewritten, summary, {})
+            new_report = brand_score_agent(final_article, research, summary)
             final_score = new_report['overall_score']
             
             # Save regenerated article
-            OUTPUT_PATH.write_text(rewritten, encoding="utf-8")
+            OUTPUT_PATH.write_text(final_article, encoding="utf-8")
             
             return {
                 "status": "success",
                 "initial_score": initial_score,
                 "final_score": final_score,
-                "auto_regenerated": True,
-                "article": rewritten,
-                "breakdown": new_report["breakdown"]
+                "article": final_article,
+                "brand_score": {
+                    "overall_score": final_score,
+                    "breakdown": new_report.get("breakdown", {}),
+                    "issues": new_report.get("issues", [])
+                }
             }
         else:
-            # Score >= 50%, just save original
+            # No suggestion - just return the evaluation
             OUTPUT_PATH.write_text(article, encoding="utf-8")
             return {
                 "status": "success",
                 "initial_score": initial_score,
                 "final_score": initial_score,
-                "auto_regenerated": False,
                 "article": article,
-                "breakdown": report["breakdown"]
+                "brand_score": {
+                    "overall_score": initial_score,
+                    "breakdown": report.get("breakdown", {}),
+                    "issues": report.get("issues", [])
+                }
             }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {
             "status": "error",
             "message": str(e)
         }
+
+async def run_branding_agent(suggestion=None):
+    """Async wrapper for branding agent"""
+    return run_branding_agent_api(suggestion=suggestion)
 
 # ================= MAIN =================
 def run():

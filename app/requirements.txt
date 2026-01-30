@@ -1,2 +1,5 @@
 google-generativeai>=0.3.0
 python-dotenv
+uvicorn>=0.40.0
+fastapi>=0.128.0
+requests

@@ -9,13 +9,14 @@ export default function BrandingPage() {
     const [article, setArticle] = useState("");
     const [brandedArticle, setBrandedArticle] = useState("");
     const [brandScore, setBrandScore] = useState(null);
+    const [suggestion, setSuggestion] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
     const [showScoreDetails, setShowScoreDetails] = useState(false);
 
     useEffect(() => {
-        // Load existing branded article on page load
-        loadBrandedArticle();
+        // Auto-run branding agent on page load
+        runBrandingAgent();
     }, []);
 
     async function loadBrandedArticle() {
@@ -30,7 +31,7 @@ export default function BrandingPage() {
         }
     }
 
-    async function runBrandingAgent() {
+    async function runBrandingAgent(suggestionText = null) {
         setLoading(true);
         setError("");
         setMessage("");
@@ -39,6 +40,56 @@ export default function BrandingPage() {
         try {
             const res = await fetch("/api/branding-agent", {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Response error:", errorText);
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+            console.log("Backend response:", data);
+
+            if (data.error) {
+                setError(data.error);
+            } else if (data.status === "success") {
+                setBrandedArticle(data.article);
+                setBrandScore(data.brand_score);
+                setMessage("✅ Article evaluated successfully!");
+                setShowScoreDetails(true);
+            } else {
+                console.log("Unexpected response status:", data.status);
+                setError(`Unexpected response: ${data.status}`);
+            }
+        } catch (err) {
+            setError(`Error: ${err.message}`);
+            console.error("Fetch error:", err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function rewriteWithSuggestion(suggestionText = null) {
+        setLoading(true);
+        setError("");
+        setMessage("");
+
+        try {
+            const suggestionToSend = suggestionText !== null ? suggestionText : suggestion;
+            
+            const res = await fetch("/api/branding-agent", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    suggestion: suggestionToSend || "",
+                }),
             });
 
             if (!res.ok) {
@@ -54,8 +105,9 @@ export default function BrandingPage() {
             } else if (data.status === "success") {
                 setBrandedArticle(data.article);
                 setBrandScore(data.brand_score);
-                setMessage("✅ Article branded successfully!");
+                setMessage("✅ Article rewritten successfully!");
                 setShowScoreDetails(true);
+                setSuggestion("");
             }
         } catch (err) {
             setError(`Error: ${err.message}`);
@@ -84,31 +136,6 @@ export default function BrandingPage() {
                 <Link href="/writing" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold">
                     ← Back to Writing Agent
                 </Link>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto mb-8">
-                <button
-                    onClick={runBrandingAgent}
-                    disabled={loading}
-                    className="col-span-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold transition"
-                >
-                    {loading ? "⏳ Processing..." : "🚀 Run Branding Agent"}
-                </button>
-
-                <button
-                    onClick={downloadBrandedArticle}
-                    disabled={!brandedArticle}
-                    className="col-span-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold transition"
-                >
-                    ⬇️ Download Branded MD
-                </button>
-
-                <button
-                    onClick={loadBrandedArticle}
-                    className="col-span-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-semibold transition"
-                >
-                    🔄 Reload
-                </button>
             </div>
 
             {loading && <p className="text-center mt-4 text-lg">⏳ Evaluating brand alignment and rewriting...</p>}
@@ -174,7 +201,7 @@ export default function BrandingPage() {
             )}
 
             {brandedArticle && (
-                <div className="max-w-4xl mx-auto bg-white/5 p-8 rounded-xl prose prose-invert max-w-none">
+                <div className="max-w-4xl mx-auto bg-white/5 p-8 rounded-xl prose prose-invert max-w-none mb-8">
                     <h2 className="text-2xl font-bold mb-6 text-white">📄 Branded Article</h2>
                     <ReactMarkdown
                         components={{
@@ -210,6 +237,53 @@ export default function BrandingPage() {
                         {brandedArticle}
                     </ReactMarkdown>
                 </div>
+            )}
+
+            {/* Suggestion box + Rewrite and Download buttons (bottom) - show only after article exists AND score < 50 */}
+            {brandedArticle && brandScore && brandScore.overall_score < 50 && (
+            <div className="max-w-4xl mx-auto mb-16">
+                <div className="bg-yellow-500/20 border border-yellow-500 p-4 rounded-lg mb-4">
+                    <p className="text-yellow-300 font-semibold">⚠️ Score below 50 - Improvements needed</p>
+                </div>
+                
+                <label className="block text-sm font-semibold mb-2">Suggestion / Feedback:</label>
+                <textarea
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    placeholder="Add suggestions to improve brand alignment and rewrite the article..."
+                    className="w-full min-h-[100px] p-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-300 mb-4"
+                />
+
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => rewriteWithSuggestion(suggestion)}
+                        disabled={loading || !suggestion}
+                        className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
+                    >
+                        {loading ? "⏳ Rewriting..." : "🔁 Rewrite with Suggestions"}
+                    </button>
+
+                    <button
+                        onClick={() => setSuggestion("")}
+                        className="bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded-xl font-semibold"
+                    >
+                        ✖️ Clear Suggestion
+                    </button>
+                </div>
+            </div>
+            )}
+
+            {/* Download button - show when score >= 50 or after successful rewrite */}
+            {brandedArticle && (!brandScore || brandScore.overall_score >= 50) && (
+            <div className="max-w-4xl mx-auto mb-16">
+                <button
+                    onClick={downloadBrandedArticle}
+                    disabled={!brandedArticle}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold w-full"
+                >
+                    ⬇️ Download MD
+                </button>
+            </div>
             )}
         </div>
     );

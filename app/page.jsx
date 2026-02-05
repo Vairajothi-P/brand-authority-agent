@@ -12,6 +12,9 @@ export default function ResearchPage() {
     const [blogCount, setBlogCount] = useState("1"); // kept for UI consistency
     const [region, setRegion] = useState("India");
     const [uploadedFile, setUploadedFile] = useState(null);
+    const [showInstructions, setShowInstructions] = useState(false);
+    const [showFullOutput, setShowFullOutput] = useState(false);
+
 
     // 🔥 NEW: suggestion input state
     const [suggestion, setSuggestion] = useState("");
@@ -37,7 +40,7 @@ export default function ResearchPage() {
             formData.append("content_goal", contentGoal);
             formData.append("brand", brand);
             formData.append("region", region);
-            formData.append("blog_count", blogCount); // unchanged
+            formData.append("blog_count", blogCount);
 
             // 🔥 NEW: send suggestion text
             if (suggestion) {
@@ -83,7 +86,7 @@ export default function ResearchPage() {
                 </h1>
             </div>
 
-            {/* FORM (existing structure preserved) */}
+            {/* FORM */}
             <form
                 onSubmit={handleRunAgent}
                 className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl mb-8"
@@ -139,7 +142,7 @@ export default function ResearchPage() {
                     />
                 </div>
 
-                {/* 🔥 NEW: Suggestion Text Box (style preserved) */}
+
                 <div className="col-span-2">
                     <label className="block text-sm font-semibold mb-2">
                         Suggestions for AI (optional):
@@ -180,7 +183,7 @@ export default function ResearchPage() {
             {/* OUTPUT (unchanged) */}
             {researchBrief && (
                 <div className="max-w-5xl mx-auto">
-                    <div className="bg-white/10 p-6 rounded-xl">
+                    <div className="bg-white/10 p-6 rounded-xl max-h-[70vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold mb-6">
                             📊 Research Brief (Writing Agent Input)
                         </h2>
@@ -224,14 +227,13 @@ export default function ResearchPage() {
                         </div>
 
                         {/* Writing Instructions */}
-                        <div>
-                            <p className="font-semibold mb-1">✍️ Writing Instructions</p>
-                            <p className="pl-4 leading-relaxed">
+                        <div className="mb-5">
+                            <p className="font-semibold mb-2">✍️ Writing Instructions</p>
+                            <div className="whitespace-pre-wrap bg-white/5 p-4 rounded-lg leading-relaxed">
                                 {researchBrief.writing_instructions}
-                            </p>
+                            </div>
                         </div>
                     </div>
-
                     {/* Writing Agent Button */}
                     <div className="mt-6 text-center">
                         <Link
@@ -243,6 +245,7 @@ export default function ResearchPage() {
                     </div>
                 </div>
             )}
+
 
         </div>
     );

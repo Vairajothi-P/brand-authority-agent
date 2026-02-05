@@ -11,6 +11,13 @@ class BrandingRequest(BaseModel):
 
 app = FastAPI()
 
+brand_tone = """
+Warm, nurturing, informative
+Target audience: Indian parents
+No sales language
+SEO-friendly but human
+"""
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -176,7 +183,8 @@ async def branding_agent_endpoint(request_data: BrandingRequest):
         suggestion = request_data.suggestion if request_data.suggestion else None
         print(f"🔍 Branding agent called with suggestion: {suggestion}")
         
-        result = await run_branding_agent(suggestion=suggestion)
+        result = await run_branding_agent(brand_tone=brand_tone,suggestion=suggestion)
+
         print(f"✅ Branding agent result: {result}")
         return result
     except Exception as e:

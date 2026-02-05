@@ -16,12 +16,18 @@ if not os.getenv("GEMINI_API_KEY"):
 BASE_DIR = Path(__file__).resolve().parent
 
 RESEARCH_PATH = BASE_DIR / "agent_outputs" / "research_briefs.json"
-SUMMARY_PATH  = BASE_DIR / "agent_outputs" / "summary.json"
 ARTICLE_PATH  = BASE_DIR / "outputs" / "article.md"
 OUTPUT_PATH   = BASE_DIR / "outputs" / "article_branded.md"
 
 RATE_WAIT = 30
 SCORE_THRESHOLD = 50  # Auto-regenerate if below 50%
+
+brand_tone = """
+Warm, nurturing, informative
+Target audience: Indian parents
+No sales language
+SEO-friendly but human
+"""
 
 # ================= HELPERS =================
 def load_json(path):
@@ -36,12 +42,12 @@ def load_md(path):
     return path.read_text(encoding="utf-8")
 
 # ================= BRAND SCORING AGENT =================
-def brand_score_agent(article, research, summary):
+def brand_score_agent(article, research, brand_tone):
     prompt = f"""
 You are a strict BRAND EVALUATION AGENT.
 
-Brand Voice:
-{json.dumps(summary, indent=2)}
+Brand Voice Guidelines:
+{brand_tone}
 
 Research Direction:
 {json.dumps(research, indent=2)}
@@ -84,14 +90,12 @@ Return ONLY valid JSON:
     )
 
     text = (response.text or "").strip()
-    # Debugging: show raw response when parsing fails
     if not text:
         raise Exception("Empty response from model when computing brand score")
 
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Try to extract a JSON object from the text (in case model prepended commentary)
         start = text.find("{")
         end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
@@ -100,17 +104,16 @@ Return ONLY valid JSON:
                 return json.loads(candidate)
             except Exception:
                 pass
-        # If still failing, raise with a helpful message including a snippet of the response
         snippet = text[:1000].replace('\n', ' ')
         raise Exception(f"Invalid JSON from model when computing brand score. Response snippet: {snippet}")
 
 # ================= REWRITE AGENT =================
-def rewrite_article(article, brand_report, research, summary):
+def rewrite_article(article, brand_report, research, brand_tone):
     prompt = f"""
 You are a SENIOR BRAND EDITOR.
 
-Brand Voice:
-{json.dumps(summary, indent=2)}
+Brand Voice Guidelines:
+{brand_tone}
 
 Research Direction:
 {json.dumps(research, indent=2)}
@@ -144,33 +147,25 @@ Return ONLY rewritten markdown.
     return response.text
 
 # ================= API MODE =================
-def run_branding_agent_api(suggestion=None):
-    """Run branding agent for API - evaluate and optionally rewrite"""
+def run_branding_agent_api(brand_tone, suggestion=None):
     try:
-        # Load inputs
-        summary = load_json(SUMMARY_PATH)
         article = load_md(ARTICLE_PATH)
         research = load_json(RESEARCH_PATH)
 
-        # Evaluate
-        report = brand_score_agent(article, research, summary)
+        report = brand_score_agent(article, research, brand_tone)
         initial_score = report['overall_score']
-        
+
         final_article = article
         final_score = initial_score
-        
+
         print(f"📊 Initial score: {initial_score}%")
-        
-        # Only rewrite if suggestion provided
+
         if suggestion:
-            print(f"✍️ Rewriting with suggestion: {suggestion}")
-            
-            # Rewrite with user suggestion
             prompt = f"""
 You are a SENIOR BRAND EDITOR.
 
-Brand Voice:
-{json.dumps(summary, indent=2)}
+Brand Voice Guidelines:
+{brand_tone}
 
 User Feedback:
 {suggestion}
@@ -190,39 +185,29 @@ Return ONLY rewritten markdown.
                 generation_config=genai.types.GenerationConfig(temperature=0.4)
             )
             final_article = response.text
-            
-            # Re-evaluate
-            new_report = brand_score_agent(final_article, research, summary)
+
+            new_report = brand_score_agent(final_article, research, brand_tone)
             final_score = new_report['overall_score']
-            
-            # Save regenerated article
+
             OUTPUT_PATH.write_text(final_article, encoding="utf-8")
-            
+
             return {
                 "status": "success",
                 "initial_score": initial_score,
                 "final_score": final_score,
                 "article": final_article,
-                "brand_score": {
-                    "overall_score": final_score,
-                    "breakdown": new_report.get("breakdown", {}),
-                    "issues": new_report.get("issues", [])
-                }
+                "brand_score": new_report
             }
-        else:
-            # No suggestion - just return the evaluation
-            OUTPUT_PATH.write_text(article, encoding="utf-8")
-            return {
-                "status": "success",
-                "initial_score": initial_score,
-                "final_score": initial_score,
-                "article": article,
-                "brand_score": {
-                    "overall_score": initial_score,
-                    "breakdown": report.get("breakdown", {}),
-                    "issues": report.get("issues", [])
-                }
-            }
+
+        OUTPUT_PATH.write_text(article, encoding="utf-8")
+        return {
+            "status": "success",
+            "initial_score": initial_score,
+            "final_score": initial_score,
+            "article": article,
+            "brand_score": report
+        }
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -231,20 +216,18 @@ Return ONLY rewritten markdown.
             "message": str(e)
         }
 
-async def run_branding_agent(suggestion=None):
-    """Async wrapper for branding agent"""
-    return run_branding_agent_api(suggestion=suggestion)
+async def run_branding_agent(brand_tone, suggestion=None):
+    return run_branding_agent_api(brand_tone=brand_tone, suggestion=suggestion)
 
 # ================= MAIN =================
 def run():
     print("\n🚀 BRANDING AGENT STARTED\n")
 
     research = load_json(RESEARCH_PATH)
-    summary  = load_json(SUMMARY_PATH)
     article  = load_md(ARTICLE_PATH)
 
     print("🔍 Evaluating brand alignment...\n")
-    report = brand_score_agent(article, research, summary)
+    report = brand_score_agent(article, research, brand_tone)
 
     print(f"📊 BRAND SCORE: {report['overall_score']}%")
     print("📌 BREAKDOWN:")
@@ -265,11 +248,11 @@ def run():
         return
 
     print("\n✍️ Rewriting article...\n")
-    rewritten = rewrite_article(article, report, research, summary)
+    rewritten = rewrite_article(article, report, research, brand_tone)
     OUTPUT_PATH.write_text(rewritten, encoding="utf-8")
 
     print("🔁 Re-evaluating rewritten article...\n")
-    new_report = brand_score_agent(rewritten, research, summary)
+    new_report = brand_score_agent(rewritten, research, brand_tone)
 
     print(f"✅ NEW BRAND SCORE: {new_report['overall_score']}%")
     print("📌 NEW BREAKDOWN:")

@@ -216,12 +216,40 @@ Output JSON schema:
   "writing_instructions": ""
 }}
 
+IMPORTANT:
+In "writing_instructions", you MUST clearly specify all of the following:
+
+1. STRUCTURE:
+   - Section layout (Introduction, H2/H3 flow, Conclusion)
+   - How to use question_keywords as section headings
+
+2. TONE & VOICE:
+   - Writing tone suitable for the target audience and brand
+   - Clarity level (simple vs technical)
+   - Emotional framing (calm, informative, empathetic, etc.)
+
+3. SEO PLACEMENT:
+   - Where to place the primary keyword (title, intro, headings, conclusion)
+   - How to use secondary keywords naturally
+   - Explicit instruction to avoid keyword stuffing
+
+4. CONTENT DEPTH:
+   - Use of examples, scenarios, or explanations
+   - Balance of benefits and limitations
+   - Instruction to avoid shallow or generic content
+
+5. CONSTRAINTS:
+   - What language to avoid (sales, fear, exaggeration)
+   - Ethical, cultural, or legal considerations
+   - Any safety or brand restrictions
+
 Context:
 {json.dumps(context, indent=2)}
 
 SERP Analysis:
 {json.dumps(serp_analysis, indent=2)}
 """
+
 
     res = call_gemini(
         prompt=prompt,

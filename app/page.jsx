@@ -79,9 +79,9 @@ export default function ResearchPage() {
         `https://www.google.com/search?q=${query.replace(/ /g, "+")}`;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-700 to-blue-700 text-white p-10">
+        <div className="min-h-screen bg-[#f3bae5] text-[#3b2342] p-10">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold text-center flex-1">
+                <h1 className="text-4xl text-[#8b6892] font-bold text-center flex-1">
                     🔍 SERP Research Agent
                 </h1>
             </div>
@@ -89,7 +89,7 @@ export default function ResearchPage() {
             {/* FORM */}
             <form
                 onSubmit={handleRunAgent}
-                className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/10 p-6 rounded-xl mb-8"
+                className="grid grid-cols-2 gap-4 max-w-4xl mx-auto bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg rounded-xl mb-8"
                 suppressHydrationWarning
             >
                 <div className="col-span-2">
@@ -97,7 +97,15 @@ export default function ResearchPage() {
                     <input
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     />
                 </div>
 
@@ -106,7 +114,15 @@ export default function ResearchPage() {
                     <input
                         value={targetAudience}
                         onChange={(e) => setTargetAudience(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     />
                 </div>
 
@@ -115,7 +131,15 @@ export default function ResearchPage() {
                     <select
                         value={contentGoal}
                         onChange={(e) => setContentGoal(e.target.value)}
-                        className="w-full px-4 py-2 bg-black/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     >
                         <option className="text-black">Educational</option>
                         <option className="text-black">Informational</option>
@@ -129,7 +153,15 @@ export default function ResearchPage() {
                     <input
                         value={brand}
                         onChange={(e) => setBrand(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     />
                 </div>
 
@@ -138,7 +170,15 @@ export default function ResearchPage() {
                     <input
                         value={region}
                         onChange={(e) => setRegion(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     />
                 </div>
 
@@ -156,8 +196,8 @@ export default function ResearchPage() {
                                 onClick={() => setBlogCount(count)}
                                 className={`px-5 py-2 rounded-lg font-semibold transition cursor-pointer
                     ${blogCount === count
-                                        ? "bg-indigo-600 text-white"
-                                        : "bg-white/20 hover:bg-white/30"
+                                        ? "bg-[#8b6892] text-white"
+                                        : "bg-[#bfafcc]/40 text-[#3b2342] hover:bg-[#bfafcc]/60"
                                     }`}
                             >
                                 {count}
@@ -173,7 +213,15 @@ export default function ResearchPage() {
                     <textarea
                         value={suggestion}
                         onChange={(e) => setSuggestion(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                         placeholder="Eg: Focus on newborn care, include Indian cultural beliefs"
                     />
                 </div>
@@ -187,40 +235,60 @@ export default function ResearchPage() {
                         type="file"
                         accept=".pdf,.txt"
                         onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
-                        className="w-full px-4 py-2 bg-white/20 border border-indigo-400 rounded-lg text-white"
+                        className="w-full px-4 py-2
+  bg-white
+  text-[#3b2342]
+  placeholder-[#6b4f73]
+  border border-[#bfafcc]
+  rounded-lg
+  focus:outline-none
+  focus:ring-2
+  focus:ring-[#8b6892]"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="col-span-2 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-semibold text-lg cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="col-span-2  bg-[#8b6892]
+  hover:bg-[#7a5a82]
+  text-white
+  py-3
+  rounded-xl
+  font-semibold
+  transition py-3 rounded-xl font-semibold text-lg cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "⏳ Analyzing SERP & competitors..." : "🚀 Run SERP Research Agent"}
                 </button>
             </form>
 
-            {error && <p className="text-red-400 text-center mb-4">❌ {error}</p>}
-            {message && <p className="text-green-400 text-center mb-4">{message}</p>}
+            {error && <p className="text-red-400 text-center mb-4 text-[#8b6892]">❌ {error}</p>}
+            {message && <p className="text-green-400 text-center text-[#8b6892] mb-4">{message}</p>}
 
             {/* OUTPUT (unchanged) */}
             {researchBrief && (
                 <div className="max-w-5xl mx-auto">
-                    <div className="bg-white/10 p-6 rounded-xl max-h-[70vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold mb-6">
+                    <div className=" whitespace-pre-wrap
+  bg-[#fde0f4]
+  p-4
+  rounded-lg
+  border border-[#bfafcc]
+  
+  leading-relaxed">
+                        <h2 className="text-[#8b6892] text-2xl font-bold mb-6">
                             📊 Research Brief (Writing Agent Input)
                         </h2>
 
                         {/* Primary Keyword */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-1">🎯 Primary Keyword</p>
-                            <p className="pl-4">{researchBrief.primary_keyword}</p>
+                            <p className="font-semibold text-[#6b4f73] mb-1">🎯 Primary Keyword</p>
+                            <p className="pl-4 text-[#3b2342]">{researchBrief.primary_keyword}</p>
                         </div>
 
                         {/* Secondary Keywords */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-1">🔑 Secondary Keywords</p>
-                            <ul className="list-disc pl-8 space-y-1">
+                            <p className="font-semibold text-[#6b4f73] mb-1">🔑 Secondary Keywords</p>
+                            <ul className="list-disc pl-8 text-[#3b2342] space-y-1">
                                 {researchBrief.secondary_keywords.map((kw, i) => (
                                     <li key={i}>{kw}</li>
                                 ))}
@@ -229,8 +297,8 @@ export default function ResearchPage() {
 
                         {/* Question Keywords */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-1">❓ Question Keywords</p>
-                            <ul className="list-disc pl-8 space-y-1">
+                            <p className="font-semibold text-[#6b4f73] mb-1">❓ Question Keywords</p>
+                            <ul className="list-disc text-[#3b2342] pl-8 space-y-1">
                                 {researchBrief.question_keywords.map((q, i) => (
                                     <li key={i}>{q}</li>
                                 ))}
@@ -239,20 +307,20 @@ export default function ResearchPage() {
 
                         {/* Content Angle */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-1">🧠 Content Angle</p>
-                            <p className="pl-4 leading-relaxed">{researchBrief.content_angle}</p>
+                            <p className="font-semibold text-[#6b4f73] mb-1">🧠 Content Angle</p>
+                            <p className="pl-4 text-[#3b2342] leading-relaxed">{researchBrief.content_angle}</p>
                         </div>
 
                         {/* Ranking Feasibility */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-1">🚀 Ranking Feasibility</p>
-                            <p className="pl-4">{researchBrief.ranking_feasibility}</p>
+                            <p className="font-semibold text-[#6b4f73] mb-1">🚀 Ranking Feasibility</p>
+                            <p className="pl-4 text-[#3b2342]">{researchBrief.ranking_feasibility}</p>
                         </div>
 
                         {/* Writing Instructions */}
                         <div className="mb-5">
-                            <p className="font-semibold mb-2">✍️ Writing Instructions</p>
-                            <div className="whitespace-pre-wrap bg-white/5 p-4 rounded-lg leading-relaxed">
+                            <p className="font-semibold text-[#6b4f73] mb-2">✍️ Writing Instructions</p>
+                            <div className="whitespace-pre-wrap bg-white/5 p-4 rounded-lg text-[#3b2342] leading-relaxed">
                                 {researchBrief.writing_instructions}
                             </div>
                         </div>
@@ -261,7 +329,7 @@ export default function ResearchPage() {
                     <div className="mt-6 text-center">
                         <Link
                             href="/writing"
-                            className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold inline-block"
+                            className="bg-[#8b6892] hover:bg-[#6b4f73] px-6 py-3 rounded-xl font-semibold text-white inline-block"
                         >
                             📝 Run Writing Agent
                         </Link>

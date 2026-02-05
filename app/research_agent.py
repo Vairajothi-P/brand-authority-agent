@@ -220,7 +220,6 @@ IMPORTANT:
 In "writing_instructions", you MUST clearly specify all of the following:
 
 1. STRUCTURE:
-   - Recommended word count range
    - Section layout (Introduction, H2/H3 flow, Conclusion)
    - How to use question_keywords as section headings
 

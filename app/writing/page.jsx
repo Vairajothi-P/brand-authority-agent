@@ -1,6 +1,7 @@
-"use client";
+ "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
 export default function WritingPage() {
@@ -10,23 +11,11 @@ export default function WritingPage() {
     const [suggestion, setSuggestion] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+    const [lastResponse, setLastResponse] = useState(null);
 
     useEffect(() => {
-        // Auto-run writing agent on page load
         runWritingAgent();
     }, []);
-
-    async function loadArticle() {
-        try {
-            const res = await fetch("/api/article-output");
-            const data = await res.json();
-            if (data.status === "found" && data.article) {
-                setArticle(data.article);
-            }
-        } catch (err) {
-            console.error("Error loading article:", err);
-        }
-    }
 
     async function runWritingAgent(suggestionText = null) {
         setLoading(true);
@@ -34,26 +23,37 @@ export default function WritingPage() {
         setMessage("");
 
         try {
-            // Load the latest research brief
-            const briefRes = await fetch("/api/research-agent", {
-                method: "GET",
-            });
+            // 🔹 STEP 1: Fetch research agent output
+            const briefRes = await fetch("/api/research-agent", { method: "GET" });
 
-            let brief = "No brief available";
-            if (briefRes.ok) {
-                try {
-                    const briefData = await briefRes.json();
-                    if (briefData.research_briefs && briefData.research_briefs.length > 0) {
-                        brief = JSON.stringify(briefData.research_briefs[0]);
-                    }
-                } catch (e) {
-                    console.log("Could not load brief from research-agent endpoint");
-                }
+            if (!briefRes.ok) {
+                throw new Error("Failed to fetch research agent");
             }
 
+            const briefData = await briefRes.json();
+            console.debug("Research Agent Response:", briefData);
+
+            // 🔥 UNIVERSAL RESEARCH EXTRACTION
+            let briefObject = null;
+
+            if (Array.isArray(briefData?.research_briefs)) {
+                briefObject = briefData.research_briefs[0];
+            } else if (briefData?.brief) {
+                briefObject = briefData.brief;
+            } else if (briefData?.data) {
+                briefObject = briefData.data;
+            } else if (typeof briefData === "object") {
+                briefObject = briefData;
+            }
+
+            if (!briefObject) {
+                throw new Error("Research brief not found in backend response");
+            }
+
+            // 🔹 STEP 2: Send research → writing agent
             const formData = new FormData();
-            formData.append("brief", brief);
-            // include optional suggestion/feedback for refinement
+            formData.append("brief", JSON.stringify(briefObject));
+
             const suggestionToSend = suggestionText ?? suggestion;
             if (suggestionToSend) {
                 formData.append("suggestion", suggestionToSend);
@@ -64,28 +64,35 @@ export default function WritingPage() {
                 body: formData,
             });
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error("Response error:", errorText);
-                throw new Error(`HTTP error! status: ${res.status}`);
+            let data = null;
+            try {
+                data = await res.json();
+            } catch (e) {
+                const text = await res.text();
+                data = { __raw: text };
             }
 
-            const data = await res.json();
-            
-            if (data.error) {
-                setError(data.error);
-            } else if (data.status === "success") {
-                setArticle(data.article);
-                setMetadata({
-                    topic: data.topic,
-                    primary_keyword: data.primary_keyword,
-                    secondary_keywords: data.secondary_keywords
-                });
-                setMessage("✅ Article generated successfully!");
+            console.debug("Writing Agent Response:", data);
+            setLastResponse(data);
+
+            if (!res.ok) {
+                throw new Error(data?.error || data?.message || "Writing agent failed");
             }
+
+            if (data?.article) {
+                setArticle(data.article);
+            }
+
+            setMetadata({
+                topic: data?.topic || "",
+                primary_keyword: data?.primary_keyword || "",
+                secondary_keywords: data?.secondary_keywords || [],
+            });
+
+            setMessage("✅ Article generated successfully!");
         } catch (err) {
-            setError(`Error: ${err.message}`);
-            console.error("Fetch error:", err);
+            console.error(err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -93,9 +100,9 @@ export default function WritingPage() {
 
     async function downloadArticle() {
         if (!article) return;
-        
+
         const element = document.createElement("a");
-        const file = new Blob([article], {type: "text/markdown"});
+        const file = new Blob([article], { type: "text/markdown" });
         element.href = URL.createObjectURL(file);
         element.download = `article_${Date.now()}.md`;
         document.body.appendChild(element);
@@ -103,93 +110,67 @@ export default function WritingPage() {
         document.body.removeChild(element);
     }
 
-    function clearArticle() {
-        setArticle("");
-        setMetadata({});
-        setMessage("");
-        setError("");
-        setSuggestion("");
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 text-white p-10">
             <h1 className="text-4xl font-bold text-center mb-8">📝 Writing Agent</h1>
 
-            
-
-            {loading && <p className="text-center mt-4 text-lg">⏳ Generating article...</p>}
-            {error && <p className="text-red-400 text-center mt-4 font-semibold">{error}</p>}
-            {message && <p className="text-green-400 text-center mt-4 font-semibold">{message}</p>}
+            {loading && <p className="text-center text-lg">⏳ Generating article...</p>}
+            {error && <p className="text-red-400 text-center font-semibold">{error}</p>}
+            {message && <p className="text-green-400 text-center font-semibold">{message}</p>}
 
             {metadata.primary_keyword && (
                 <div className="max-w-6xl mx-auto bg-white/10 p-6 rounded-xl mb-8">
                     <h2 className="text-xl font-bold mb-4">📌 Article Metadata</h2>
                     <p><b>Topic:</b> {metadata.topic}</p>
                     <p><b>Primary Keyword:</b> {metadata.primary_keyword}</p>
-                    <p><b>Secondary Keywords:</b> {metadata.secondary_keywords?.join(", ") || "N/A"}</p>
+                    <p><b>Secondary Keywords:</b> {metadata.secondary_keywords?.join(", ")}</p>
                 </div>
             )}
 
             {article && (
                 <div className="max-w-4xl mx-auto bg-white/5 p-8 rounded-xl prose prose-invert max-w-none">
-                    <ReactMarkdown 
-                        components={{
-                            h1: ({node, ...props}) => <h1 className="text-3xl font-bold my-4 text-white" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="text-2xl font-bold my-3 text-indigo-300" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="text-xl font-semibold my-2 text-indigo-200" {...props} />,
-                            p: ({node, ...props}) => <p className="my-2 text-gray-200 leading-relaxed" {...props} />,
-                            li: ({node, ...props}) => <li className="my-1 text-gray-200 ml-4" {...props} />,
-                            code: ({node, ...props}) => <code className="bg-black/50 px-2 py-1 rounded text-yellow-300" {...props} />,
-                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-500 pl-4 my-2 italic text-gray-300" {...props} />,
-                        }}
-                    >
-                        {article}
-                    </ReactMarkdown>
+                    <ReactMarkdown>{article}</ReactMarkdown>
                 </div>
             )}
 
-            {/* Suggestion box + Re-run and Download buttons (bottom) - show only after article exists */}
             {article && (
-            <div className="max-w-4xl mx-auto mt-6 mb-16">
-                <label className="block text-sm font-semibold mb-2">Suggestion / Feedback (optional):</label>
-                <textarea
-                    value={suggestion}
-                    onChange={(e) => setSuggestion(e.target.value)}
-                    placeholder="Add a suggestion or edits for the writing agent..."
-                    className="w-full min-h-[100px] p-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-300 mb-4"
-                />
+                <div className="max-w-4xl mx-auto mt-6">
+                    <textarea
+                        value={suggestion}
+                        onChange={(e) => setSuggestion(e.target.value)}
+                        placeholder="Optional refinement suggestion..."
+                        className="w-full min-h-[100px] p-4 bg-white/5 rounded-lg mb-4"
+                    />
 
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => runWritingAgent(suggestion)}
-                        disabled={loading}
-                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
-                    >
-                        {loading ? "⏳ Running..." : "🔁 Re-run with Suggestions"}
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => runWritingAgent(suggestion)}
+                            className="bg-purple-600 px-6 py-3 rounded-xl font-semibold"
+                        >
+                            🔁 Re-run
+                        </button>
 
-                    <button
-                        onClick={downloadArticle}
-                        disabled={!article}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-xl font-semibold"
-                    >
-                        ⬇️ Download MD
-                    </button>
+                        <button
+                            onClick={downloadArticle}
+                            className="bg-blue-600 px-6 py-3 rounded-xl font-semibold"
+                        >
+                            ⬇️ Download
+                        </button>
 
-                    <button
-                        onClick={() => setSuggestion("")}
-                        className="bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded-xl font-semibold"
-                    >
-                        ✖️ Clear Suggestion
-                    </button>
                         <Link
                             href="/branding"
-                            className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold inline-block"
+                            className="bg-indigo-600 px-6 py-3 rounded-xl font-semibold"
                         >
-                            📝 Run Branding Agent
+                            🧠 Branding Agent
                         </Link>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {!article && lastResponse && (
+                <pre className="max-w-4xl mx-auto mt-6 bg-black/40 p-4 rounded text-sm">
+                    {JSON.stringify(lastResponse, null, 2)}
+                </pre>
             )}
         </div>
     );

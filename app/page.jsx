@@ -117,10 +117,10 @@ export default function ResearchPage() {
                         onChange={(e) => setContentGoal(e.target.value)}
                         className="w-full px-4 py-2 bg-black/20 border border-indigo-400 rounded-lg text-white"
                     >
-                        <option>Educational</option>
-                        <option>Informational</option>
-                        <option>Commercial</option>
-                        <option>Brand Authority</option>
+                        <option className="text-black">Educational</option>
+                        <option className="text-black">Informational</option>
+                        <option className="text-black">Commercial</option>
+                        <option className="text-black">Brand Authority</option>
                     </select>
                 </div>
 
@@ -154,7 +154,7 @@ export default function ResearchPage() {
                                 key={count}
                                 type="button"
                                 onClick={() => setBlogCount(count)}
-                                className={`px-5 py-2 rounded-lg font-semibold transition
+                                className={`px-5 py-2 rounded-lg font-semibold transition cursor-pointer
                     ${blogCount === count
                                         ? "bg-indigo-600 text-white"
                                         : "bg-white/20 hover:bg-white/30"
@@ -194,7 +194,7 @@ export default function ResearchPage() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="col-span-2 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-semibold text-lg"
+                    className="col-span-2 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-semibold text-lg cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "⏳ Analyzing SERP & competitors..." : "🚀 Run SERP Research Agent"}
                 </button>

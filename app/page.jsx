@@ -142,6 +142,29 @@ export default function ResearchPage() {
                     />
                 </div>
 
+                {/* Blog Count Selector */}
+                <div className="col-span-2">
+                    <label className="block text-sm font-semibold mb-2">
+                        Number of Blogs to Generate:
+                    </label>
+
+                    <div className="flex gap-4">
+                        {["1", "2", "3", "4", "5"].map((count) => (
+                            <button
+                                key={count}
+                                type="button"
+                                onClick={() => setBlogCount(count)}
+                                className={`px-5 py-2 rounded-lg font-semibold transition
+                    ${blogCount === count
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-white/20 hover:bg-white/30"
+                                    }`}
+                            >
+                                {count}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 <div className="col-span-2">
                     <label className="block text-sm font-semibold mb-2">
